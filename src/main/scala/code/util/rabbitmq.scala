@@ -36,21 +36,19 @@ import net.liftmodules.amqp.{AMQPSender,StringAMQPSender,AMQPMessage}
 import scala.actors._
 import code.model.{BankAccountDetails, BankAccountDetailsAMQPSender}
 
-
+/**
+ * An Example of how to use the Example subclass of AMQPSender[T]. Still following?
+ */
 object BankAccountDetailsSender {
-  val factory = new ConnectionFactory()
-  factory.setUsername("guest")
-  factory.setPassword("guest")
-  factory.setVirtualHost("/")
-  factory.setRequestedHeartbeat(0)
-  val connection = factory.newConnection()
-  val channel = connection.createChannel();
+  val factory = new ConnectionFactory {
+    import ConnectionFactory._
 
-  //here to declare consumer  for management
-  channel.exchangeDeclare("directExchange", "direct", false)
-  channel.queueDeclare("management", false, false, false, null)
-  //                  QUEUE,         EXCHANGE,      QUEUE_ROUTING_KEY
-  channel.queueBind ("management", "directExchange", "management")
+    setHost(DEFAULT_HOST)
+    setPort(DEFAULT_AMQP_PORT)
+    setUsername(DEFAULT_USER)
+    setPassword(DEFAULT_PASS)
+    setVirtualHost(DEFAULT_VHOST)
+  }
 
   //BankAccountDetailsAMQPSender(ConnectionFactory, EXCHANGE, QUEUE_ROUTING_KEY)
   val amqp = new BankAccountDetailsAMQPSender(factory, "directExchange", "management")
