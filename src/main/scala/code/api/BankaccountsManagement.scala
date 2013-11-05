@@ -42,7 +42,7 @@ import _root_.net.liftweb.util.Helpers._
 import code.model._
 import code.util.APIUtil._
 import net.liftweb.json
-import code.util.BankAccountDetailsSender
+import code.util.BankAccountSender
 import code.model.{AddBankAccount, UpdateBankAccount, DeleteBankAccount}
 import net.liftmodules.amqp.AMQPMessage
 import code.pgp.PgpEncryption
@@ -65,7 +65,7 @@ object BankaccountsManagement extends OBPRestHelper with Loggable {
         } yield {
           val encrypted_pin = PgpEncryption.encryptToString(bankAccountJson.pin_code, publicKey)
           val message = AddBankAccount(bankAccountJson.account_number, bankAccountJson.blz_iban, encrypted_pin)
-          BankAccountDetailsSender.sendMessage(message)
+          BankAccountSender.sendMessage(message)
           successJsonResponse(Extraction.decompose(message) , 201)
         }
     }
@@ -81,7 +81,7 @@ object BankaccountsManagement extends OBPRestHelper with Loggable {
         } yield {
           val encrypted_pin = PgpEncryption.encryptToString(bankAccountJson.pin_code, publicKey)
           val message = UpdateBankAccount(bankAccountJson.account_number, bankAccountJson.blz_iban, encrypted_pin)
-          BankAccountDetailsSender.sendMessage(message)
+          BankAccountSender.sendMessage(message)
           successJsonResponse(Extraction.decompose(message) , 201)
         }
     }
@@ -95,7 +95,7 @@ object BankaccountsManagement extends OBPRestHelper with Loggable {
           u <- user ?~ "user not found"
         } yield {
           val message = DeleteBankAccount(account_number, blz_iban)
-          BankAccountDetailsSender.sendMessage(message)
+          BankAccountSender.sendMessage(message)
           // successJsonResponse(Extraction.decompose(message) , 201)
           noContentJsonResponse
         }

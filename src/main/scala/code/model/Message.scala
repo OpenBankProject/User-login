@@ -4,14 +4,14 @@ import scala.actors._
 import net.liftmodules.amqp.AMQPSender
 import com.rabbitmq.client.{ConnectionFactory,Channel}
 
-trait BankAccountDetails{}
+trait BankAccount{}
 
-case class AddBankAccount(accountNumber : String, blzIban : String, pinCode : String) extends BankAccountDetails
-case class UpdateBankAccount(accountNumber : String, blzIban : String, pinCode : String) extends BankAccountDetails
-case class DeleteBankAccount(accountNumber : String, blzIban : String) extends BankAccountDetails
+case class AddBankAccount(accountNumber : String, blzIban : String, pinCode : String) extends BankAccount
+case class UpdateBankAccount(accountNumber : String, blzIban : String, pinCode : String) extends BankAccount
+case class DeleteBankAccount(accountNumber : String, blzIban : String) extends BankAccount
 
-class BankAccountDetailsAMQPSender(cf: ConnectionFactory, exchange: String, routingKey: String)
- extends AMQPSender[BankAccountDetails](cf, exchange, routingKey) {
+class BankAccountAMQPSender(cf: ConnectionFactory, exchange: String, routingKey: String)
+ extends AMQPSender[BankAccount](cf, exchange, routingKey) {
   override def configure(channel: Channel) = {
     val conn = cf.newConnection()
     val channel = conn.createChannel()

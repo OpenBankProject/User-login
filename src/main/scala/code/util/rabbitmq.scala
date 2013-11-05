@@ -34,12 +34,12 @@ package code.util
 import com.rabbitmq.client.ConnectionFactory
 import net.liftmodules.amqp.{AMQPSender,StringAMQPSender,AMQPMessage}
 import scala.actors._
-import code.model.{BankAccountDetails, BankAccountDetailsAMQPSender}
+import code.model.{BankAccount, BankAccountAMQPSender}
 
 /**
  * An Example of how to use the Example subclass of AMQPSender[T]. Still following?
  */
-object BankAccountDetailsSender {
+object BankAccountSender {
   val factory = new ConnectionFactory {
     import ConnectionFactory._
 
@@ -50,10 +50,10 @@ object BankAccountDetailsSender {
     setVirtualHost(DEFAULT_VHOST)
   }
 
-  //BankAccountDetailsAMQPSender(ConnectionFactory, EXCHANGE, QUEUE_ROUTING_KEY)
-  val amqp = new BankAccountDetailsAMQPSender(factory, "directExchange", "management")
+  //BankAccountAMQPSender(ConnectionFactory, EXCHANGE, QUEUE_ROUTING_KEY)
+  val amqp = new BankAccountAMQPSender(factory, "directExchange", "management")
 
-  def sendMessage(message: BankAccountDetails) = {
+  def sendMessage(message: BankAccount) = {
      amqp ! AMQPMessage(message)
   }
 }
