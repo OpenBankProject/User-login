@@ -31,10 +31,11 @@ Berlin 13359, Germany
  */
 package code.util
 
-import com.rabbitmq.client.ConnectionFactory
+import com.rabbitmq.client.{ConnectionFactory,Channel}
 import net.liftmodules.amqp.{AMQPSender,StringAMQPSender,AMQPMessage}
 import scala.actors._
-import code.model.{BankAccount, BankAccountAMQPSender}
+import code.model.BankAccount
+import net.liftmodules.amqp.AMQPSender
 
 /**
  * An Example of how to use the Example subclass of AMQPSender[T]. Still following?
@@ -55,5 +56,14 @@ object BankAccountSender {
 
   def sendMessage(message: BankAccount) = {
      amqp ! AMQPMessage(message)
+  }
+}
+
+class BankAccountAMQPSender(cf: ConnectionFactory, exchange: String, routingKey: String)
+ extends AMQPSender[BankAccount](cf, exchange, routingKey) {
+  override def configure(channel: Channel) = {
+    val conn = cf.newConnection()
+    val channel = conn.createChannel()
+    channel
   }
 }
