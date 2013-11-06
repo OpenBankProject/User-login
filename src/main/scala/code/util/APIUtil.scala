@@ -24,9 +24,13 @@ object APIUtil {
     success: String
   )
 
-  case class BankaccountJSON(
+  case class BankAccountJSON(
     account_number: String,
     blz_iban: String,
+    pin_code: String
+  )
+
+  case class PinCodeJSON(
     pin_code: String
   )
 

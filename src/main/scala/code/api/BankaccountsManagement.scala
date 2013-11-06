@@ -59,7 +59,7 @@ object BankaccountsManagement extends OBPRestHelper with Loggable {
     case "bankaccounts" :: Nil JsonPost jsonBody -> _ => {
       user =>
         for {
-          bankAccountJson <- tryo{jsonBody.extract[BankaccountJSON]} ?~ "wrong JSON format"
+          bankAccountJson <- tryo{jsonBody.extract[BankAccountJSON]} ?~ "wrong JSON format"
           publicKey <- Props.get("publicKeyPath")
           u <- user ?~ "user not found"
         } yield {
@@ -72,15 +72,15 @@ object BankaccountsManagement extends OBPRestHelper with Loggable {
   })
 
   oauthServe(apiPrefix{
-    case "bankaccounts" :: Nil JsonPut jsonBody -> _ => {
+    case "bankaccounts" :: blz_iban :: account_number :: Nil JsonPut jsonBody -> _ => {
       user =>
         for {
-          bankAccountJson <- tryo{jsonBody.extract[BankaccountJSON]} ?~ "wrong JSON format"
+          bankAccountJson <- tryo{jsonBody.extract[PinCodeJSON]} ?~ "wrong JSON format"
           publicKey <- Props.get("publicKeyPath")
           u <- user ?~ "user not found"
         } yield {
           val encrypted_pin = PgpEncryption.encryptToString(bankAccountJson.pin_code, publicKey)
-          val message = UpdateBankAccount(bankAccountJson.account_number, bankAccountJson.blz_iban, encrypted_pin)
+          val message = UpdateBankAccount(account_number, blz_iban, encrypted_pin)
           BankAccountSender.sendMessage(message)
           successJsonResponse(Extraction.decompose(message) , 201)
         }
@@ -91,7 +91,7 @@ object BankaccountsManagement extends OBPRestHelper with Loggable {
     case "bankaccounts" :: blz_iban :: account_number :: Nil JsonDelete jsonBody => {
       user =>
         for {
-          publicKey <- Props.get("publicKeyPath")
+          publicKey <- Props.get("publicKeyPath") //just for having sth between brackets when user commented
           u <- user ?~ "user not found"
         } yield {
           val message = DeleteBankAccount(account_number, blz_iban)
