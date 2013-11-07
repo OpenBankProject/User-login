@@ -47,7 +47,7 @@ import code.model.{AddBankAccount, UpdateBankAccount, DeleteBankAccount}
 import net.liftmodules.amqp.AMQPMessage
 import code.pgp.PgpEncryption
 
-object BankaccountsManagement extends OBPRestHelper with Loggable {
+object BankAccountsManagement extends OBPRestHelper with Loggable {
 
   implicit def errorToJson(error: ErrorMessage): JValue = Extraction.decompose(error)
 
@@ -61,7 +61,7 @@ object BankaccountsManagement extends OBPRestHelper with Loggable {
         for {
           bankAccountJson <- tryo{jsonBody.extract[BankAccountJSON]} ?~ "wrong JSON format"
           publicKey <- Props.get("publicKeyPath")
-          u <- user ?~ "user not found"
+          // u <- user ?~ "user not found"
         } yield {
           val encrypted_pin = PgpEncryption.encryptToString(bankAccountJson.pin_code, publicKey)
           val message = AddBankAccount(bankAccountJson.account_number, bankAccountJson.blz_iban, encrypted_pin)
@@ -77,7 +77,7 @@ object BankaccountsManagement extends OBPRestHelper with Loggable {
         for {
           bankAccountJson <- tryo{jsonBody.extract[PinCodeJSON]} ?~ "wrong JSON format"
           publicKey <- Props.get("publicKeyPath")
-          u <- user ?~ "user not found"
+          // u <- user ?~ "user not found"
         } yield {
           val encrypted_pin = PgpEncryption.encryptToString(bankAccountJson.pin_code, publicKey)
           val message = UpdateBankAccount(account_number, blz_iban, encrypted_pin)
@@ -92,7 +92,7 @@ object BankaccountsManagement extends OBPRestHelper with Loggable {
       user =>
         for {
           publicKey <- Props.get("publicKeyPath") //just for having sth between brackets when user commented
-          u <- user ?~ "user not found"
+          // u <- user ?~ "user not found"
         } yield {
           val message = DeleteBankAccount(account_number, blz_iban)
           BankAccountSender.sendMessage(message)

@@ -50,7 +50,8 @@ import net.liftweb.util.Helpers
 import javax.mail.{ Authenticator, PasswordAuthentication }
 import java.io.FileInputStream
 import java.io.File
-import code.api.BankaccountsManagement
+import code.api.BankAccountsManagement
+import code.util.ResponseAMQPListener
 /**
  * A class that's instantiated early and run.  It allows the application
  * to modify lift's environment
@@ -223,6 +224,7 @@ class Boot extends Loggable{
     // Make a transaction span the whole HTTP request
     S.addAround(DB.buildLoanWrapper)
 
-    LiftRules.statelessDispatchTable.append(BankaccountsManagement)
+    LiftRules.statelessDispatchTable.append(BankAccountsManagement)
+    ResponseAMQPListener.startListen
   }
 }
