@@ -8,17 +8,18 @@ import net.liftweb.actor._
 import net.liftweb.common.{Full,Box,Empty}
 import net.liftweb.mapper.By
 import net.liftweb.util.Helpers.tryo
-import net.liftweb.util._
 
 class ResponseSerializedAMQPDispatcher[T](factory: ConnectionFactory)
     extends AMQPDispatcher[T](factory) {
   override def configure(channel: Channel) {
+    val autoAck = false;
     channel.exchangeDeclare("directExchange2", "direct", false)
     channel.queueDeclare("response", false, false, false, null)
     channel.queueBind ("response", "directExchange2", "response")
-    channel.basicConsume("response", false, new SerializedConsumer(channel, this))
+    channel.basicConsume("response", autoAck, new SerializedConsumer(channel, this))
   }
 }
+
 
 object ResponseAMQPListener {
   lazy val factory = new ConnectionFactory {
