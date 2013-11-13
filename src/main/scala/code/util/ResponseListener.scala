@@ -48,8 +48,8 @@ class ResponseAMQPListener(actor: LiftActor, messageId:String) {
     // localhost is a machine on your network with rabbitmq listening on port 5672
     setHost("localhost")
     setPort(DEFAULT_AMQP_PORT)
-    setUsername(DEFAULT_USER)
-    setPassword(DEFAULT_PASS)
+    setUsername(Props.get("connection.user", DEFAULT_USER))
+    setPassword(Props.get("connection.password", DEFAULT_PASS))
     setVirtualHost(DEFAULT_VHOST)
   }
 
