@@ -33,7 +33,6 @@ package code.util
 
 import com.rabbitmq.client.{ConnectionFactory,Channel}
 import net.liftmodules.amqp.{AMQPSender,StringAMQPSender,AMQPMessage}
-import scala.actors._
 import code.model.BankAccount
 
 object BankAccountSender {

@@ -225,6 +225,5 @@ class Boot extends Loggable{
     S.addAround(DB.buildLoanWrapper)
 
     LiftRules.statelessDispatchTable.append(BankAccountsManagement)
-    ResponseAMQPListener.startListen
   }
 }

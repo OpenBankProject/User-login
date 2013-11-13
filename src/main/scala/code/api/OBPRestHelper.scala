@@ -9,6 +9,10 @@ import net.liftweb.http.S
 import code.util.APIUtil._
 import code.model.User
 import code.api.OAuthHandshake._
+import net.liftweb.actor.LAFuture
+import net.liftweb.http.rest._
+import code.model.{Response, SuccessResponse, ErrorResponse}
+import net.liftweb.json.Extraction
 
 class OBPRestHelper extends RestHelper with Loggable {
 
@@ -83,5 +87,16 @@ class OBPRestHelper extends RestHelper with Loggable {
     super.serve(obpHandler)
   }
 
-
+  implicit def futureToResponse(in: LAFuture[Response]): Box[JsonResponse] = {
+    RestContinuation.async(reply => {
+      in.onSuccess(t => t match {
+        case _: SuccessResponse => reply.apply(successJsonResponse(t.message, 201))
+        case _: ErrorResponse => reply.apply(errorJsonResponse(t.message, 400))
+      })
+      in.onFail {
+        case Failure(msg, _, _) => reply.apply(errorJsonResponse(msg))
+        case _ => reply.apply(errorJsonResponse())
+      }
+    })
+  }
 }

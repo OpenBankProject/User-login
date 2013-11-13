@@ -54,8 +54,8 @@ object APIUtil {
   def noContentJsonResponse : JsonResponse =
     JsonResponse(JsRaw(""), headers, Nil, 204)
 
-  def successJsonResponse(json: JsExp, httpCode : Int = 200) : JsonResponse =
-    JsonResponse(json, headers, Nil, httpCode)
+  def successJsonResponse(message : String = "success", httpCode : Int = 200) : JsonResponse =
+    JsonResponse(Extraction.decompose(SuccessMessage(message)), headers, Nil, httpCode)
 
   def errorJsonResponse(message : String = "error", httpCode : Int = 400) : JsonResponse =
     JsonResponse(Extraction.decompose(ErrorMessage(message)), headers, Nil, httpCode)

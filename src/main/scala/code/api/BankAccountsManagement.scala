@@ -32,20 +32,25 @@ Berlin 13359, Germany
 package code.api
 
 import net.liftweb.http.JsonResponse
+import net.liftweb.http.LiftResponse
 import net.liftweb.http.rest._
 import net.liftweb.json.Printer._
 import net.liftweb.json.Extraction
 import net.liftweb.json.JsonAST._
 import net.liftweb.common.{Failure,Full,Empty, Box, Loggable}
-import _root_.net.liftweb.util._
-import _root_.net.liftweb.util.Helpers._
+import net.liftweb.actor.LAFuture
+import net.liftweb.util._
+import net.liftweb.util.Helpers._
 import code.model._
 import code.util.APIUtil._
 import net.liftweb.json
-import code.util.BankAccountSender
-import code.model.{AddBankAccount, UpdateBankAccount, DeleteBankAccount}
+import code.util.{BankAccountSender, ResponseAMQPListener}
+import code.model.{AddBankAccount, UpdateBankAccount, DeleteBankAccount, Response, SuccessResponse, ErrorResponse}
 import net.liftmodules.amqp.AMQPMessage
 import code.pgp.PgpEncryption
+import net.liftweb.actor.LiftActor
+import net.liftweb.util.StringHelpers
+
 
 object BankAccountsManagement extends OBPRestHelper with Loggable {
 
@@ -54,19 +59,31 @@ object BankAccountsManagement extends OBPRestHelper with Loggable {
   // TODO: nicer prefix
   val apiPrefix = "obp" / "v1" oPrefix _
 
-
   oauthServe(apiPrefix {
     case "bankaccounts" :: Nil JsonPost jsonBody -> _ => {
       user =>
         for {
           bankAccountJson <- tryo{jsonBody.extract[BankAccountJSON]} ?~ "wrong JSON format"
           publicKey <- Props.get("publicKeyPath")
-          // u <- user ?~ "user not found"
+          u <- user ?~ "user not found"
         } yield {
+          val id = randomString(8)
           val encrypted_pin = PgpEncryption.encryptToString(bankAccountJson.pin_code, publicKey)
-          val message = AddBankAccount(bankAccountJson.account_number, bankAccountJson.blz_iban, encrypted_pin)
+          val message = AddBankAccount(id, bankAccountJson.account_number, bankAccountJson.blz_iban, encrypted_pin)
           BankAccountSender.sendMessage(message)
-          successJsonResponse(Extraction.decompose(message) , 201)
+          case class Message(
+            m: String
+          )
+          val fut: LAFuture[Response] = new LAFuture()
+          object o extends LiftActor{
+            def messageHandler = {
+              case r: Response => {
+                fut.complete(Full(r))
+              }
+            }
+          }
+          new ResponseAMQPListener(o, id)
+          futureToResponse(fut)
         }
     }
   })
@@ -77,12 +94,25 @@ object BankAccountsManagement extends OBPRestHelper with Loggable {
         for {
           bankAccountJson <- tryo{jsonBody.extract[PinCodeJSON]} ?~ "wrong JSON format"
           publicKey <- Props.get("publicKeyPath")
-          // u <- user ?~ "user not found"
+          u <- user ?~ "user not found"
         } yield {
+          val id = randomString(8)
           val encrypted_pin = PgpEncryption.encryptToString(bankAccountJson.pin_code, publicKey)
-          val message = UpdateBankAccount(account_number, blz_iban, encrypted_pin)
+          val message = UpdateBankAccount(id, account_number, blz_iban, encrypted_pin)
           BankAccountSender.sendMessage(message)
-          successJsonResponse(Extraction.decompose(message) , 201)
+          case class Message(
+            m: String
+          )
+          val fut: LAFuture[Response] = new LAFuture()
+          object o extends LiftActor{
+            def messageHandler = {
+              case r: Response => {
+                fut.complete(Full(r))
+              }
+            }
+          }
+          new ResponseAMQPListener(o, id)
+          futureToResponse(fut)
         }
     }
   })
@@ -92,12 +122,24 @@ object BankAccountsManagement extends OBPRestHelper with Loggable {
       user =>
         for {
           publicKey <- Props.get("publicKeyPath") //just for having sth between brackets when user commented
-          // u <- user ?~ "user not found"
+          u <- user ?~ "user not found"
         } yield {
-          val message = DeleteBankAccount(account_number, blz_iban)
+          val id = randomString(8)
+          val message = DeleteBankAccount(id, account_number, blz_iban)
           BankAccountSender.sendMessage(message)
-          // successJsonResponse(Extraction.decompose(message) , 201)
-          noContentJsonResponse
+          case class Message(
+            m: String
+          )
+          val fut: LAFuture[Response] = new LAFuture()
+          object o extends LiftActor{
+            def messageHandler = {
+              case r: Response => {
+                fut.complete(Full(r))
+              }
+            }
+          }
+          new ResponseAMQPListener(o, id)
+          futureToResponse(fut)
         }
     }
   })

@@ -1,27 +1,48 @@
 package code.util
 
-// import com.rabbitmq.client.{ConnectionFactory,ConnectionParameters,Channel}
-import com.rabbitmq.client.{ConnectionFactory,Channel}
-import net.liftmodules.amqp.{AMQPAddListener,AMQPMessage, AMQPDispatcher, SerializedConsumer}
-import scala.actors._
+import com.rabbitmq.client.{ConnectionFactory,Channel, DefaultConsumer, Envelope, BasicProperties, AMQP}
+import net.liftmodules.amqp.{AMQPAddListener,AMQPMessage, AMQPDispatcher}
 import net.liftweb.actor._
 import net.liftweb.common.{Full,Box,Empty}
 import net.liftweb.mapper.By
 import net.liftweb.util.Helpers.tryo
+import net.liftweb.util._
+import java.io.ObjectInputStream
+import java.io.ByteArrayInputStream
+import code.model.Response
 
-class ResponseSerializedAMQPDispatcher[T](factory: ConnectionFactory)
+
+
+class ResponseSerializedAMQPDispatcher[T](factory: ConnectionFactory, actor: LiftActor, messageId: String)
     extends AMQPDispatcher[T](factory) {
   override def configure(channel: Channel) {
     val autoAck = false;
     channel.exchangeDeclare("directExchange2", "direct", false)
     channel.queueDeclare("response", false, false, false, null)
     channel.queueBind ("response", "directExchange2", "response")
-    channel.basicConsume("response", autoAck, new SerializedConsumer(channel, this))
+    channel.basicConsume("response", autoAck, new SerializedConsumer(channel, actor, messageId))
   }
 }
 
+class SerializedConsumer(channel: Channel, a: LiftActor, id: String) extends DefaultConsumer(channel) {
+  override def handleDelivery(tag: String, env: Envelope, props: AMQP.BasicProperties, body: Array[Byte]){
+    val routingKey = env.getRoutingKey
+    val contentType = props.getContentType
+    val deliveryTag = env.getDeliveryTag
+    val in = new ObjectInputStream(new ByteArrayInputStream(body))
+    tryo{ in.readObject.asInstanceOf[Response] } match {
+      case Full(t) =>
+        if(id == t.id){
+          a ! t
+          channel.basicAck(deliveryTag, false);
+          channel.close()
+        }
+      case _ =>
+    }
+  }
+}
 
-object ResponseAMQPListener {
+class ResponseAMQPListener(actor: LiftActor, messageId:String) {
   lazy val factory = new ConnectionFactory {
     import ConnectionFactory._
     // localhost is a machine on your network with rabbitmq listening on port 5672
@@ -32,16 +53,7 @@ object ResponseAMQPListener {
     setVirtualHost(DEFAULT_VHOST)
   }
 
-  val amqp = new ResponseSerializedAMQPDispatcher[String](factory) // string
+  new ResponseSerializedAMQPDispatcher[Response](factory, actor, messageId)
 
-  val stringListener = new LiftActor {
-    protected def messageHandler = {
-      case msg@AMQPMessage(contents: String) => println("received: " + msg)
-    }
-  }
-
-  def startListen = {
-    amqp ! AMQPAddListener(stringListener)
-  }
 }
 
