@@ -45,7 +45,7 @@ import code.model._
 import code.util.APIUtil._
 import net.liftweb.json
 import code.util.{BankAccountSender, ResponseAMQPListener}
-import code.model.{AddBankAccount, UpdateBankAccount, DeleteBankAccount, Response, SuccessResponse, ErrorResponse}
+import code.model._
 import net.liftmodules.amqp.AMQPMessage
 import code.pgp.PgpEncryption
 import net.liftweb.actor.LiftActor
@@ -121,7 +121,6 @@ object BankAccountsManagement extends OBPRestHelper with Loggable {
     case "bankaccounts" :: blz_iban :: account_number :: Nil JsonDelete jsonBody => {
       user =>
         for {
-          publicKey <- Props.get("publicKeyPath") //just for having sth between brackets when user commented
           u <- user ?~ "user not found"
         } yield {
           val id = randomString(8)
