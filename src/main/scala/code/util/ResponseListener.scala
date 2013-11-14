@@ -24,6 +24,7 @@ class ResponseSerializedAMQPDispatcher[T](factory: ConnectionFactory, actor: Lif
   }
 }
 
+//consumer checks if id of the saved message fits the id of the sent message
 class SerializedConsumer(channel: Channel, a: LiftActor, id: String) extends DefaultConsumer(channel) {
   override def handleDelivery(tag: String, env: Envelope, props: AMQP.BasicProperties, body: Array[Byte]){
     val routingKey = env.getRoutingKey

@@ -46,7 +46,7 @@ object BankAccountSender {
     setVirtualHost(DEFAULT_VHOST)
   }
 
-  //BankAccountAMQPSender(ConnectionFactory, EXCHANGE, QUEUE_ROUTING_KEY)
+              //BankAccountAMQPSender(ConnectionFactory, EXCHANGE, QUEUE_ROUTING_KEY)
   val amqp = new BankAccountAMQPSender(factory, "directExchange", "management")
 
   def sendMessage(message: BankAccount) = {

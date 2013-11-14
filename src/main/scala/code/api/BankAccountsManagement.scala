@@ -56,8 +56,7 @@ object BankAccountsManagement extends OBPRestHelper with Loggable {
 
   implicit def errorToJson(error: ErrorMessage): JValue = Extraction.decompose(error)
 
-  // TODO: nicer prefix
-  val apiPrefix = "obp" / "v1" oPrefix _
+  val apiPrefix = "obp" / "management" oPrefix _
 
   oauthServe(apiPrefix {
     case "bankaccounts" :: Nil JsonPost jsonBody -> _ => {
@@ -74,16 +73,17 @@ object BankAccountsManagement extends OBPRestHelper with Loggable {
           case class Message(
             m: String
           )
-          val fut: LAFuture[Response] = new LAFuture()
-          object o extends LiftActor{
+          val future: LAFuture[Response] = new LAFuture()
+          // watingActor waits for acknowledgement if message was saved
+          object waitingActor extends LiftActor{
             def messageHandler = {
               case r: Response => {
-                fut.complete(Full(r))
+                future.complete(Full(r))
               }
             }
           }
-          new ResponseAMQPListener(o, id)
-          futureToResponse(fut)
+          new ResponseAMQPListener(waitingActor, id)
+          futureToResponse(future)
         }
     }
   })
@@ -103,16 +103,17 @@ object BankAccountsManagement extends OBPRestHelper with Loggable {
           case class Message(
             m: String
           )
-          val fut: LAFuture[Response] = new LAFuture()
-          object o extends LiftActor{
+          val future: LAFuture[Response] = new LAFuture()
+          // watingActor waits for acknowledgement if message was updated
+          object waitingActor extends LiftActor{
             def messageHandler = {
               case r: Response => {
-                fut.complete(Full(r))
+                future.complete(Full(r))
               }
             }
           }
-          new ResponseAMQPListener(o, id)
-          futureToResponse(fut)
+          new ResponseAMQPListener(waitingActor, id)
+          futureToResponse(future)
         }
     }
   })
@@ -129,16 +130,17 @@ object BankAccountsManagement extends OBPRestHelper with Loggable {
           case class Message(
             m: String
           )
-          val fut: LAFuture[Response] = new LAFuture()
-          object o extends LiftActor{
+          val future: LAFuture[Response] = new LAFuture()
+          // watingActor waits for acknowledgement if message was deleted
+          object waitingActor extends LiftActor{
             def messageHandler = {
               case r: Response => {
-                fut.complete(Full(r))
+                future.complete(Full(r))
               }
             }
           }
-          new ResponseAMQPListener(o, id)
-          futureToResponse(fut)
+          new ResponseAMQPListener(waitingActor, id)
+          futureToResponse(future)
         }
     }
   })
