@@ -44,7 +44,7 @@ import net.liftweb.util.Helpers._
 import code.model._
 import code.util.APIUtil._
 import net.liftweb.json
-import code.util.{BankAccountSender, ResponseAMQPListener}
+import code.util.{BankAccountSender, ResponseAMQPListener, BlzMapper}
 import code.model._
 import net.liftmodules.amqp.AMQPMessage
 import code.pgp.PgpEncryption
@@ -57,6 +57,20 @@ object BankAccountsManagement extends OBPRestHelper with Loggable {
   implicit def errorToJson(error: ErrorMessage): JValue = Extraction.decompose(error)
 
   val apiPrefix = "obp" / "management" oPrefix _
+
+  oauthServe(apiPrefix {
+    case "de" :: "banks" :: Nil JsonGet json => {
+      user =>
+        def hbciToSupportedBanks(supportedBanks: Map[String,HBCIBank]): Iterable[SupportedBank] = {
+          supportedBanks map{
+            case (key, value) => SupportedBank(value.name, key)
+          }
+        }
+        val supportedBanks = SupportedBanks(hbciToSupportedBanks(BlzMapper.availableBanks).toList)
+        Full(JsonResponse( Extraction.decompose(supportedBanks), ("Access-Control-Allow-Origin","*") :: Nil, Nil, 200))
+    }
+  })
+
 
   oauthServe(apiPrefix {
     case "bankaccounts" :: Nil JsonPost jsonBody -> _ => {
