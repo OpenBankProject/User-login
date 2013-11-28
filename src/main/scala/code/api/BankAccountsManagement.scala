@@ -44,8 +44,7 @@ import net.liftweb.util.Helpers._
 import code.model._
 import code.util.APIUtil._
 import net.liftweb.json
-import code.util.{BankAccountSender, ResponseAMQPListener}
-import code.model.{AddBankAccount, UpdateBankAccount, DeleteBankAccount, Response, SuccessResponse, ErrorResponse}
+import code.util.{BankAccountSender, ResponseAMQPListener, BlzMapper}
 import net.liftmodules.amqp.AMQPMessage
 import code.pgp.PgpEncryption
 import net.liftweb.actor.LiftActor
@@ -56,8 +55,21 @@ object BankAccountsManagement extends OBPRestHelper with Loggable {
 
   implicit def errorToJson(error: ErrorMessage): JValue = Extraction.decompose(error)
 
-  // TODO: nicer prefix
-  val apiPrefix = "obp" / "v1" oPrefix _
+  val apiPrefix = "obp" / "management" oPrefix _
+
+  oauthServe(apiPrefix {
+    case "de" :: "banks" :: Nil JsonGet json => {
+      user =>
+        def hbciToSupportedBanks(supportedBanks: Map[String,HBCIBank]): Iterable[SupportedBank] = {
+          supportedBanks map{
+            case (key, value) => SupportedBank(value.name, key)
+          }
+        }
+        val supportedBanks = SupportedBanks(hbciToSupportedBanks(BlzMapper.availableBanks).toList)
+        Full(JsonResponse( Extraction.decompose(supportedBanks), ("Access-Control-Allow-Origin","*") :: Nil, Nil, 200))
+    }
+  })
+
 
   oauthServe(apiPrefix {
     case "bankaccounts" :: Nil JsonPost jsonBody -> _ => {
@@ -74,16 +86,17 @@ object BankAccountsManagement extends OBPRestHelper with Loggable {
           case class Message(
             m: String
           )
-          val fut: LAFuture[Response] = new LAFuture()
-          object o extends LiftActor{
+          val future: LAFuture[Response] = new LAFuture()
+          // watingActor waits for acknowledgement if message was saved
+          object waitingActor extends LiftActor{
             def messageHandler = {
               case r: Response => {
-                fut.complete(Full(r))
+                future.complete(Full(r))
               }
             }
           }
-          new ResponseAMQPListener(o, id)
-          futureToResponse(fut)
+          new ResponseAMQPListener(waitingActor, id)
+          futureToResponse(future)
         }
     }
   })
@@ -103,16 +116,17 @@ object BankAccountsManagement extends OBPRestHelper with Loggable {
           case class Message(
             m: String
           )
-          val fut: LAFuture[Response] = new LAFuture()
-          object o extends LiftActor{
+          val future: LAFuture[Response] = new LAFuture()
+          // watingActor waits for acknowledgement if message was updated
+          object waitingActor extends LiftActor{
             def messageHandler = {
               case r: Response => {
-                fut.complete(Full(r))
+                future.complete(Full(r))
               }
             }
           }
-          new ResponseAMQPListener(o, id)
-          futureToResponse(fut)
+          new ResponseAMQPListener(waitingActor, id)
+          futureToResponse(future)
         }
     }
   })
@@ -121,7 +135,6 @@ object BankAccountsManagement extends OBPRestHelper with Loggable {
     case "bankaccounts" :: blz_iban :: account_number :: Nil JsonDelete jsonBody => {
       user =>
         for {
-          publicKey <- Props.get("publicKeyPath") //just for having sth between brackets when user commented
           u <- user ?~ "user not found"
         } yield {
           val id = randomString(8)
@@ -130,16 +143,17 @@ object BankAccountsManagement extends OBPRestHelper with Loggable {
           case class Message(
             m: String
           )
-          val fut: LAFuture[Response] = new LAFuture()
-          object o extends LiftActor{
+          val future: LAFuture[Response] = new LAFuture()
+          // watingActor waits for acknowledgement if message was deleted
+          object waitingActor extends LiftActor{
             def messageHandler = {
               case r: Response => {
-                fut.complete(Full(r))
+                future.complete(Full(r))
               }
             }
           }
-          new ResponseAMQPListener(o, id)
-          futureToResponse(fut)
+          new ResponseAMQPListener(waitingActor, id)
+          futureToResponse(future)
         }
     }
   })

@@ -51,7 +51,8 @@ import javax.mail.{ Authenticator, PasswordAuthentication }
 import java.io.FileInputStream
 import java.io.File
 import code.api.BankAccountsManagement
-import code.util.ResponseAMQPListener
+import code.util.{ResponseAMQPListener, BlzMapper}
+
 /**
  * A class that's instantiated early and run.  It allows the application
  * to modify lift's environment
@@ -225,5 +226,7 @@ class Boot extends Loggable{
     S.addAround(DB.buildLoanWrapper)
 
     LiftRules.statelessDispatchTable.append(BankAccountsManagement)
+
+    BlzMapper.getAvaliableBanks
   }
 }
