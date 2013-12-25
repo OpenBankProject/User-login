@@ -29,119 +29,119 @@ Berlin 13359, Germany
   Ayoub Benali: ayoub AT tesobe DOT com
 
  */
-package code.api
+// package code.api
 
-import net.liftweb.http.JsonResponse
-import net.liftweb.http.LiftResponse
-import net.liftweb.http.rest._
-import net.liftweb.json.Printer._
-import net.liftweb.json.Extraction
-import net.liftweb.json.JsonAST._
-import net.liftweb.common.{Failure,Full,Empty, Box, Loggable}
-import net.liftweb.actor.LAFuture
-import net.liftweb.util._
-import net.liftweb.util.Helpers._
-import code.model._
-import code.util.APIUtil._
-import net.liftweb.json
-import code.util.{BankAccountSender, ResponseAMQPListener}
-import code.model._
-import net.liftmodules.amqp.AMQPMessage
-import code.pgp.PgpEncryption
-import net.liftweb.actor.LiftActor
-import net.liftweb.util.StringHelpers
+// import net.liftweb.http.JsonResponse
+// import net.liftweb.http.LiftResponse
+// import net.liftweb.http.rest._
+// import net.liftweb.json.Printer._
+// import net.liftweb.json.Extraction
+// import net.liftweb.json.JsonAST._
+// import net.liftweb.common.{Failure,Full,Empty, Box, Loggable}
+// import net.liftweb.actor.LAFuture
+// import net.liftweb.util._
+// import net.liftweb.util.Helpers._
+// import com.tesobe.model._
+// import code.util.APIUtil._
+// import net.liftweb.json
+// import code.util.{BankAccountSender, ResponseAMQPListener}
+// import code.model._
+// import net.liftmodules.amqp.AMQPMessage
+// import code.pgp.PgpEncryption
+// import net.liftweb.actor.LiftActor
+// import net.liftweb.util.StringHelpers
 
 
-object BankAccountsManagement extends OBPRestHelper with Loggable {
+// object BankAccountsManagement extends OBPRestHelper with Loggable {
 
-  implicit def errorToJson(error: ErrorMessage): JValue = Extraction.decompose(error)
+//   implicit def errorToJson(error: ErrorMessage): JValue = Extraction.decompose(error)
 
-  val apiPrefix = "obp" / "management" oPrefix _
+//   val apiPrefix = "obp" / "management" oPrefix _
 
-  oauthServe(apiPrefix {
-    case "bankaccounts" :: Nil JsonPost jsonBody -> _ => {
-      user =>
-        for {
-          bankAccountJson <- tryo{jsonBody.extract[BankAccountJSON]} ?~ "wrong JSON format"
-          publicKey <- Props.get("publicKeyPath")
-          u <- user ?~ "user not found"
-        } yield {
-          val id = randomString(8)
-          val encrypted_pin = PgpEncryption.encryptToString(bankAccountJson.pin_code, publicKey)
-          val message = AddBankAccount(id, bankAccountJson.account_number, bankAccountJson.blz_iban, encrypted_pin)
-          BankAccountSender.sendMessage(message)
-          case class Message(
-            m: String
-          )
-          val future: LAFuture[Response] = new LAFuture()
-          // watingActor waits for acknowledgement if message was saved
-          object waitingActor extends LiftActor{
-            def messageHandler = {
-              case r: Response => {
-                future.complete(Full(r))
-              }
-            }
-          }
-          new ResponseAMQPListener(waitingActor, id)
-          futureToResponse(future)
-        }
-    }
-  })
+//   oauthServe(apiPrefix {
+//     case "bankaccounts" :: Nil JsonPost jsonBody -> _ => {
+//       user =>
+//         for {
+//           bankAccountJson <- tryo{jsonBody.extract[BankAccountJSON]} ?~ "wrong JSON format"
+//           publicKey <- Props.get("publicKeyPath")
+//           u <- user ?~ "user not found"
+//         } yield {
+//           val id = randomString(8)
+//           val encrypted_pin = PgpEncryption.encryptToString(bankAccountJson.pin_code, publicKey)
+//           val message = AddBankAccountCredentials(id, bankAccountJson.account_number, bankAccountJson.blz_iban, encrypted_pin)
+//           BankAccountSender.sendMessage(message)
+//           case class Message(
+//             m: String
+//           )
+//           val future: LAFuture[Response] = new LAFuture()
+//           // watingActor waits for acknowledgment if message was saved
+//           object waitingActor extends LiftActor{
+//             def messageHandler = {
+//               case r: Response => {
+//                 future.complete(Full(r))
+//               }
+//             }
+//           }
+//           new ResponseAMQPListener(waitingActor, id)
+//           futureToResponse(future)
+//         }
+//     }
+//   })
 
-  oauthServe(apiPrefix{
-    case "bankaccounts" :: blz_iban :: account_number :: Nil JsonPut jsonBody -> _ => {
-      user =>
-        for {
-          bankAccountJson <- tryo{jsonBody.extract[PinCodeJSON]} ?~ "wrong JSON format"
-          publicKey <- Props.get("publicKeyPath")
-          u <- user ?~ "user not found"
-        } yield {
-          val id = randomString(8)
-          val encrypted_pin = PgpEncryption.encryptToString(bankAccountJson.pin_code, publicKey)
-          val message = UpdateBankAccount(id, account_number, blz_iban, encrypted_pin)
-          BankAccountSender.sendMessage(message)
-          case class Message(
-            m: String
-          )
-          val future: LAFuture[Response] = new LAFuture()
-          // watingActor waits for acknowledgement if message was updated
-          object waitingActor extends LiftActor{
-            def messageHandler = {
-              case r: Response => {
-                future.complete(Full(r))
-              }
-            }
-          }
-          new ResponseAMQPListener(waitingActor, id)
-          futureToResponse(future)
-        }
-    }
-  })
+//   oauthServe(apiPrefix{
+//     case "bankaccounts" :: blz_iban :: account_number :: Nil JsonPut jsonBody -> _ => {
+//       user =>
+//         for {
+//           bankAccountJson <- tryo{jsonBody.extract[PinCodeJSON]} ?~ "wrong JSON format"
+//           publicKey <- Props.get("publicKeyPath")
+//           u <- user ?~ "user not found"
+//         } yield {
+//           val id = randomString(8)
+//           val encrypted_pin = PgpEncryption.encryptToString(bankAccountJson.pin_code, publicKey)
+//           val message = UpdateBankAccountCredentials(id, account_number, blz_iban, encrypted_pin)
+//           BankAccountSender.sendMessage(message)
+//           case class Message(
+//             m: String
+//           )
+//           val future: LAFuture[Response] = new LAFuture()
+//           // watingActor waits for acknowledgement if message was updated
+//           object waitingActor extends LiftActor{
+//             def messageHandler = {
+//               case r: Response => {
+//                 future.complete(Full(r))
+//               }
+//             }
+//           }
+//           new ResponseAMQPListener(waitingActor, id)
+//           futureToResponse(future)
+//         }
+//     }
+//   })
 
-  oauthServe(apiPrefix {
-    case "bankaccounts" :: blz_iban :: account_number :: Nil JsonDelete jsonBody => {
-      user =>
-        for {
-          u <- user ?~ "user not found"
-        } yield {
-          val id = randomString(8)
-          val message = DeleteBankAccount(id, account_number, blz_iban)
-          BankAccountSender.sendMessage(message)
-          case class Message(
-            m: String
-          )
-          val future: LAFuture[Response] = new LAFuture()
-          // watingActor waits for acknowledgement if message was deleted
-          object waitingActor extends LiftActor{
-            def messageHandler = {
-              case r: Response => {
-                future.complete(Full(r))
-              }
-            }
-          }
-          new ResponseAMQPListener(waitingActor, id)
-          futureToResponse(future)
-        }
-    }
-  })
-}
+//   oauthServe(apiPrefix {
+//     case "bankaccounts" :: blz_iban :: account_number :: Nil JsonDelete jsonBody => {
+//       user =>
+//         for {
+//           u <- user ?~ "user not found"
+//         } yield {
+//           val id = randomString(8)
+//           val message = DeleteBankAccountCredentials(id, account_number, blz_iban)
+//           BankAccountSender.sendMessage(message)
+//           case class Message(
+//             m: String
+//           )
+//           val future: LAFuture[Response] = new LAFuture()
+//           // watingActor waits for acknowledgement if message was deleted
+//           object waitingActor extends LiftActor{
+//             def messageHandler = {
+//               case r: Response => {
+//                 future.complete(Full(r))
+//               }
+//             }
+//           }
+//           new ResponseAMQPListener(waitingActor, id)
+//           futureToResponse(future)
+//         }
+//     }
+//   })
+// }

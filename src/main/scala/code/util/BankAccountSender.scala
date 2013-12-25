@@ -33,7 +33,7 @@ package code.util
 
 import com.rabbitmq.client.{ConnectionFactory,Channel}
 import net.liftmodules.amqp.{AMQPSender,StringAMQPSender,AMQPMessage}
-import code.model.BankAccount
+import com.tesobe.model.BankAccount
 import net.liftweb.util._
 
 object BankAccountSender {
@@ -46,11 +46,12 @@ object BankAccountSender {
     setVirtualHost(DEFAULT_VHOST)
   }
 
-              //BankAccountAMQPSender(ConnectionFactory, EXCHANGE, QUEUE_ROUTING_KEY)
+  //BankAccountAMQPSender(ConnectionFactory, EXCHANGE, QUEUE_ROUTING_KEY)
   val amqp = new BankAccountAMQPSender(factory, "directExchange", "management")
 
   def sendMessage(message: BankAccount) = {
-     amqp ! AMQPMessage(message)
+    println("sending: " + message)
+    amqp ! AMQPMessage(message)
   }
 }
 

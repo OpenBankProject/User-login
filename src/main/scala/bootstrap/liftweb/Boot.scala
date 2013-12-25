@@ -23,9 +23,6 @@ Berlin 13359, Germany
   This product includes software developed at
   TESOBE (http://www.tesobe.com/)
   by
-  Simon Redfern : simon AT tesobe DOT com
-  Stefan Bethge : stefan AT tesobe DOT com
-  Everett Sochowski : everett AT tesobe DOT com
   Ayoub Benali: ayoub AT tesobe DOT com
 
  */
@@ -40,8 +37,7 @@ import sitemap._
 import Loc._
 import mapper._
 import code.model.dataAccess._
-import code.model.{Nonce, Consumer, Token}
-import code.api._
+import code.model.{Consumer, Token}
 import net.liftweb.util.Helpers._
 import net.liftweb.json.JsonDSL._
 import net.liftweb.util.Schedule
@@ -50,8 +46,6 @@ import net.liftweb.util.Helpers
 import javax.mail.{ Authenticator, PasswordAuthentication }
 import java.io.FileInputStream
 import java.io.File
-import code.api.BankAccountsManagement
-import code.util.ResponseAMQPListener
 /**
  * A class that's instantiated early and run.  It allows the application
  * to modify lift's environment
@@ -143,13 +137,6 @@ class Boot extends Loggable{
 
       DB.defineConnectionManager(DefaultConnectionIdentifier, vendor)
     }
-    Mailer.authenticator = for {
-      user <- Props.get("mail.username")
-      pass <- Props.get("mail.password")
-    } yield new Authenticator {
-      override def getPasswordAuthentication =
-        new PasswordAuthentication(user,pass)
-    }
 
     val runningMode = Props.mode match {
       case Props.RunModes.Production => "Production mode"
@@ -170,27 +157,13 @@ class Boot extends Loggable{
     LiftRules.addToPackages("code")
 
     //OAuth Mapper
-    Schemifier.schemify(true, Schemifier.infoF _, Nonce)
     Schemifier.schemify(true, Schemifier.infoF _, Token)
     Schemifier.schemify(true, Schemifier.infoF _, Consumer)
 
-    def check(bool: Boolean) : Box[LiftResponse] = {
-      if(bool){
-        Empty
-      }else{
-        Full(PlainTextResponse("unauthorized"))
-      }
-    }
 
     // Build SiteMap
     val sitemap = List(
-          Menu.i("Home") / "index",
-          Menu.i("Consumer Admin") / "admin" / "consumers" >> LocGroup("admin")
-          	submenus(Consumer.menus : _*),
-          Menu("Consumer Registration", "Developers") / "consumer-registration",
-          Menu.i("Metrics") / "metrics",
-          Menu.i("OAuth") / "oauth" / "authorize", //OAuth authorization page
-          Menu.i("Connect") / "connect"
+          Menu.i("OAuth") / "oauth" / "authorize" //OAuth authorization page
     )
 
     def sitemapMutators = OBPUser.sitemapMutator
@@ -224,6 +197,5 @@ class Boot extends Loggable{
     // Make a transaction span the whole HTTP request
     S.addAround(DB.buildLoanWrapper)
 
-    LiftRules.statelessDispatchTable.append(BankAccountsManagement)
   }
 }
