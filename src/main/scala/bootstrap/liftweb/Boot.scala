@@ -163,7 +163,9 @@ class Boot extends Loggable{
 
     // Build SiteMap
     val sitemap = List(
-          Menu.i("OAuth") / "oauth" / "authorize" //OAuth authorization page
+          Menu.i("OAuth") / "oauth" / "authorize", //OAuth authorization page
+          Menu.i("Banking Credentials") / "banking-credentials"
+
     )
 
     def sitemapMutators = OBPUser.sitemapMutator
