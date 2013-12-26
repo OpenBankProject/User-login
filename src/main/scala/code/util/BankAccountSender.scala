@@ -50,7 +50,6 @@ object BankAccountSender {
   val amqp = new BankAccountAMQPSender(factory, "directExchange", "management")
 
   def sendMessage(message: BankAccount) = {
-    println("sending: " + message)
     amqp ! AMQPMessage(message)
   }
 }

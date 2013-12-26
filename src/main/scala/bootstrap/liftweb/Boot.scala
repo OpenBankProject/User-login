@@ -46,6 +46,9 @@ import net.liftweb.util.Helpers
 import javax.mail.{ Authenticator, PasswordAuthentication }
 import java.io.FileInputStream
 import java.io.File
+import code.util.Helper
+import net.liftweb.http.js.JsCmds
+
 /**
  * A class that's instantiated early and run.  It allows the application
  * to modify lift's environment
@@ -176,13 +179,8 @@ class Boot extends Loggable{
     // Use jQuery 1.4
     LiftRules.jsArtifacts = net.liftweb.http.js.jquery.JQuery14Artifacts
 
-    //Show the spinny image when an Ajax call starts
-    LiftRules.ajaxStart =
-      Full(() => LiftRules.jsArtifacts.show("ajax-loader").cmd)
-
-    // Make the spinny image go away when it ends
-    LiftRules.ajaxEnd =
-      Full(() => LiftRules.jsArtifacts.hide("ajax-loader").cmd)
+    LiftRules.ajaxStart = Full( () => JsCmds.JsShowId("ajax-spinner") & Helper.JsHideByClass("hide-during-ajax") )
+    LiftRules.ajaxEnd = Full( () => JsCmds.JsHideId("ajax-spinner") )
 
     // Force the request to be UTF-8
     LiftRules.early.append(_.setCharacterEncoding("UTF-8"))

@@ -140,3 +140,9 @@ span#registrationDetails
 {
   color:red;
 }
+#ajax-spinner{
+  margin-left: auto;
+  margin-right: auto;
+  width: 31px;
+  height: 31px;
+}
