@@ -9,7 +9,7 @@ import net.liftweb.util.Helpers.tryo
 import net.liftweb.util._
 import java.io.ObjectInputStream
 import java.io.ByteArrayInputStream
-import code.model.Response
+import com.tesobe.model.Response
 
 
 

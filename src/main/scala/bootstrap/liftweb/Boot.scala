@@ -23,9 +23,6 @@ Berlin 13359, Germany
   This product includes software developed at
   TESOBE (http://www.tesobe.com/)
   by
-  Simon Redfern : simon AT tesobe DOT com
-  Stefan Bethge : stefan AT tesobe DOT com
-  Everett Sochowski : everett AT tesobe DOT com
   Ayoub Benali: ayoub AT tesobe DOT com
 
  */
@@ -40,8 +37,7 @@ import sitemap._
 import Loc._
 import mapper._
 import code.model.dataAccess._
-import code.model.{Nonce, Consumer, Token}
-import code.api._
+import code.model.{Consumer, Token}
 import net.liftweb.util.Helpers._
 import net.liftweb.json.JsonDSL._
 import net.liftweb.util.Schedule
@@ -50,8 +46,8 @@ import net.liftweb.util.Helpers
 import javax.mail.{ Authenticator, PasswordAuthentication }
 import java.io.FileInputStream
 import java.io.File
-import code.api.BankAccountsManagement
-import code.util.{ResponseAMQPListener, BlzMapper}
+import code.util.Helper
+import net.liftweb.http.js.JsCmds
 
 /**
  * A class that's instantiated early and run.  It allows the application
@@ -144,13 +140,6 @@ class Boot extends Loggable{
 
       DB.defineConnectionManager(DefaultConnectionIdentifier, vendor)
     }
-    Mailer.authenticator = for {
-      user <- Props.get("mail.username")
-      pass <- Props.get("mail.password")
-    } yield new Authenticator {
-      override def getPasswordAuthentication =
-        new PasswordAuthentication(user,pass)
-    }
 
     val runningMode = Props.mode match {
       case Props.RunModes.Production => "Production mode"
@@ -171,27 +160,16 @@ class Boot extends Loggable{
     LiftRules.addToPackages("code")
 
     //OAuth Mapper
-    Schemifier.schemify(true, Schemifier.infoF _, Nonce)
     Schemifier.schemify(true, Schemifier.infoF _, Token)
     Schemifier.schemify(true, Schemifier.infoF _, Consumer)
 
-    def check(bool: Boolean) : Box[LiftResponse] = {
-      if(bool){
-        Empty
-      }else{
-        Full(PlainTextResponse("unauthorized"))
-      }
-    }
 
     // Build SiteMap
     val sitemap = List(
-          Menu.i("Home") / "index",
-          Menu.i("Consumer Admin") / "admin" / "consumers" >> LocGroup("admin")
-          	submenus(Consumer.menus : _*),
-          Menu("Consumer Registration", "Developers") / "consumer-registration",
-          Menu.i("Metrics") / "metrics",
           Menu.i("OAuth") / "oauth" / "authorize", //OAuth authorization page
-          Menu.i("Connect") / "connect"
+          Menu.i("Callback") / "oauth" / "callback",
+          Menu.i("Banking Credentials") / "banking-credentials"
+
     )
 
     def sitemapMutators = OBPUser.sitemapMutator
@@ -202,13 +180,8 @@ class Boot extends Loggable{
     // Use jQuery 1.4
     LiftRules.jsArtifacts = net.liftweb.http.js.jquery.JQuery14Artifacts
 
-    //Show the spinny image when an Ajax call starts
-    LiftRules.ajaxStart =
-      Full(() => LiftRules.jsArtifacts.show("ajax-loader").cmd)
-
-    // Make the spinny image go away when it ends
-    LiftRules.ajaxEnd =
-      Full(() => LiftRules.jsArtifacts.hide("ajax-loader").cmd)
+    LiftRules.ajaxStart = Full( () => JsCmds.JsShowId("ajax-spinner") & Helper.JsHideByClass("hide-during-ajax") )
+    LiftRules.ajaxEnd = Full( () => JsCmds.JsHideId("ajax-spinner") )
 
     // Force the request to be UTF-8
     LiftRules.early.append(_.setCharacterEncoding("UTF-8"))
@@ -225,8 +198,5 @@ class Boot extends Loggable{
     // Make a transaction span the whole HTTP request
     S.addAround(DB.buildLoanWrapper)
 
-    LiftRules.statelessDispatchTable.append(BankAccountsManagement)
-
-    BlzMapper.getAvaliableBanks
   }
 }

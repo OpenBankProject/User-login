@@ -1,6 +1,6 @@
 # Properties in this file will be read when running in dev mode
-importer.confdir=configs
-#importer.apiurl=http://localhost:8080
-publicKeyPath=
-connection.user=
-connection.password=
+#publicKeyPath=FILL_ME
+#connection.user=FILL_ME
+#connection.password=FILL_ME
+db.driver=FILL_ME
+db.url=FILL_ME

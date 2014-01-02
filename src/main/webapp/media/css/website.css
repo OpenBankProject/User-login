@@ -1,0 +1,148 @@
+@import url('reset.css');
+
+body {
+  font-family: "HelveticaNeue-Light", "Helvetica Neue Light", "Helvetica Neue", Helvetica, Arial, "Lucida Grande", sans-serif;
+  font-weight: 300;
+}
+
+a {
+  color: #1C8B77;
+}
+
+a:hover {
+  color: #156759;
+}
+
+input.submit {
+  margin: 0 0 0 2px;
+  cursor: pointer;
+}
+
+#wrapper {
+  /*width: 940px;*/
+  width: 1050px;
+  margin: 0 auto;
+}
+
+#header {
+  overflow: auto;
+  padding: 45px 0 40px;
+  background: transparent url(../images/header.png) repeat-x 50% 100%;
+}
+
+
+#logo {
+  float: left;
+  overflow: hidden;
+  width: 279px;
+  height: 38px;
+  margin: 0 0 0 10px;
+  background: transparent url(../images/logo.png) no-repeat 50% 0;
+  text-indent: -9999em;
+  cursor: pointer;
+}
+
+form.login .field {
+  width: 164px;
+}
+
+form.login label {
+  font-size: 11px;
+}
+
+form.login input.field {
+  width: 150px;
+  background: #ffffff;
+  border: 1px solid #999999;
+  border-radius: 3px;
+  font-size: 12px;
+  padding: 2px;
+}
+
+form.login .forgot,
+form.login .signup {
+  margin: 1px 8px 0 0;
+  padding: 2px 0 0;
+  font-size: 11px;
+}
+
+form.login .submit {
+  background: #c1e7e1;
+  border: 1px solid #22a890;
+  border-radius: 3px;
+  padding: 2px 5px;
+  color: #58988e;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+#content {
+  padding: 20px 0 40px;
+}
+
+table {
+  width: 100%;
+  margin: 0 0 40px;
+  border-collapse: collapse;
+  clear : both;
+}
+
+/* don't add spacing after last table in a transaction list */
+#content div div:last-of-type table {
+    margin-bottom: 0px;
+}
+
+table th,
+table td {
+  text-align: left;
+}
+
+table tbody tr {
+  background: #f3f9f8;
+}
+
+table tbody tr:nth-child(even) {
+  background: #f2f8f1;
+}
+
+table td {
+  padding: 14px 10px;
+  border-top: 2px solid #ffffff;
+  line-height: 1em;
+  font-size: 13px;
+  vertical-align: top;
+}
+
+table th {
+  overflow: auto;
+  padding: 0 0 10px 8px;
+  border-bottom: 2px solid #cbcbcb;
+}
+
+#footer {
+  background: #f0f0f0;
+  border-top: 1px dotted #cccccc;
+  border-radius: 0 0 8px 8px;
+  padding: 10px 0 13px;
+}
+
+#footer p {
+  color: #999999;
+  font-size: 11px;
+  text-align: center;
+}
+
+span#registrationDetails
+{
+  font-size: 10px;
+}
+.error
+{
+  color:red;
+}
+#ajax-spinner{
+  margin-left: auto;
+  margin-right: auto;
+  width: 31px;
+  height: 31px;
+}
