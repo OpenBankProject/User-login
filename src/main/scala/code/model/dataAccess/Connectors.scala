@@ -44,16 +44,14 @@ object LocalStorage extends MongoDBLocalStorage
 trait LocalStorage extends Loggable {
 
   def getUser(id : String) : Box[User]
-  def getCurrentUser : Box[User]
 }
 
 class MongoDBLocalStorage extends LocalStorage {
 
-  def getUser(id : String) : Box[User] =
-    OBPUser.find(By(OBPUser.email,id)) match {
-      case Full(u) => Full(u)
-      case _ => Failure("user " + id + " not found")
-    }
+  def getUser(id : String) : Box[User] = {
+    for{
+      user <- APIUser.find(By(APIUser.providerId,id)) ?~ { s"user $id not found"}
+    } yield user
+  }
 
-  def getCurrentUser : Box[User] = OBPUser.currentUser
 }
