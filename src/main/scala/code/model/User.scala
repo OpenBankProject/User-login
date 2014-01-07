@@ -47,6 +47,4 @@ trait User {
 object User {
   def findById(id : String) : Box[User] =
     LocalStorage.getUser(id)
-  def currentUser : Box[User] =
-    LocalStorage.getCurrentUser
 }

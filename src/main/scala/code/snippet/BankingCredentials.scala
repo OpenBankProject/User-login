@@ -90,7 +90,7 @@ class BankingCrendetials{
     val publicKey = Props.get("publicKeyPath").getOrElse("")
     val encryptedPin =
       PgpEncryption.encryptToString(accountPin.is, publicKey)
-    val accountOwner = u.id_
+    val accountOwner = u.user.obj.map(_.id_).getOrElse("")
     val message =
       AddBankAccountCredentials(
         id,

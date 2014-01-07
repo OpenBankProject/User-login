@@ -35,39 +35,68 @@ import net.liftweb.mapper._
 import net.liftweb.util._
 import net.liftweb.common._
 import scala.xml.NodeSeq
+import net.liftweb.sitemap.Loc.LocGroup
 import net.liftweb.http.{S,SessionVar,Templates}
 import net.liftweb.json.JsonDSL._
 import net.liftweb.http.SHtml
 import net.liftweb.http.S
-import net.liftweb.util.Helpers._
+import net.liftweb.json.JsonAST.JObject
 import net.liftweb.http.js.JsCmds.FocusOnLoad
-import code.model.User
 
 
 /**
  * An O-R mapped "User" class that includes first name, last name, password
  */
-class OBPUser extends MegaProtoUser[OBPUser] with User with OneToMany[Long, OBPUser]{
+class OBPUser extends MegaProtoUser[OBPUser] with Logger{
   def getSingleton = OBPUser // what's the "meta" server
-  def id_ = emailAddress
-  def emailAddress = email.get
-  def theFirstName : String = firstName.get
-  def theLastName : String = lastName.get
-  def provider = Props.get("hostname","")
+
+  object user extends MappedLongForeignKey(this, APIUser)
+
+  override def save(): Boolean = {
+    if(user == null){
+      info("user reference is null. We will create an API User")
+      val apiUser = APIUser.create
+      .firstName(firstName.get)
+      .lastName(lastName.get)
+      .email(email)
+      .provider_(Props.get("hostname",""))
+      .providerId(id.get.toString)
+      .saveMe
+      user(apiUser)
+    }
+    else {
+      user.obj.map{ u =>{
+          info("user reference is no null. We will update the API User")
+
+          u.firstName(firstName.get)
+          .lastName(lastName.get)
+          .email(email)
+          .save
+        }
+      }
+    }
+    super.save()
+  }
+
+  override def delete_!(): Boolean = {
+    user.obj.map{_.delete_!}
+    super.delete_!
+  }
 }
 
 /**
  * The singleton that has methods for accessing the database
  */
 object OBPUser extends OBPUser with MetaMegaProtoUser[OBPUser]{
+import net.liftweb.util.Helpers._
+
 
   override def dbTableName = "users" // define the DB table name
 
-  override def screenWrap = Full(<lift:surround with="default" at="content">
-             <lift:bind /></lift:surround>)
+  override def screenWrap = Full(<lift:surround with="default" at="content"><lift:bind /></lift:surround>)
   // define the order fields will appear in forms and output
-  override def fieldOrder = List(id, firstName, lastName, email,
-  locale, timezone, password)
+  override def fieldOrder = List(id, firstName, lastName, email, password)
+  override def signupFields = List(firstName, lastName, email, password)
 
   // comment this line out to require email validations
   override def skipEmailValidation = true
@@ -107,7 +136,7 @@ object OBPUser extends OBPUser with MetaMegaProtoUser[OBPUser]{
         case Full(user) if user.validated_? &&
           user.testPassword(S.param("password")) => {
             val preLoginState = capturePreLoginState()
-            println("login redir: " + loginRedirect.is)
+            info("login redir: " + loginRedirect.is)
             val redir = loginRedirect.is match {
               case Full(url) =>
                 loginRedirect(Empty)
@@ -126,7 +155,7 @@ object OBPUser extends OBPUser with MetaMegaProtoUser[OBPUser]{
           }
 
         case _ => {
-          println("failed: " + failedLoginRedirect.get)
+          info("failed: " + failedLoginRedirect.get)
           failedLoginRedirect.get.foreach(S.redirectTo(_))
         }
       }
@@ -137,5 +166,6 @@ object OBPUser extends OBPUser with MetaMegaProtoUser[OBPUser]{
          "password" -> (<input type="password" name="password"/>),
          "submit" -> loginSubmitButton(S.??("log.in")))
   }
+
 
 }
