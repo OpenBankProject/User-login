@@ -10,8 +10,8 @@ import net.liftweb.common.{Full, Failure, Empty, Box}
 import scala.xml.NodeSeq
 import scala.util.{Either, Right, Left}
 
-import code.model.dataAccess.OBPUser
-import code.util.{RequestToken, GermanBanks, BankAccountSender}
+import code.model.dataAccess.APIUser
+import code.util.{RequestToken, GermanBanks, BankAccountSender, User}
 import code.model.Token
 import code.pgp.PgpEncryption
 import com.tesobe.model.AddBankAccountCredentials
@@ -85,12 +85,12 @@ class BankingCrendetials{
       }
   }
 
-  private def processData(t: Token, u: OBPUser): String = {
+  private def processData(t: Token, u: APIUser): String = {
     val id = randomString(8)
     val publicKey = Props.get("publicKeyPath").getOrElse("")
     val encryptedPin =
       PgpEncryption.encryptToString(accountPin.is, publicKey)
-    val accountOwner = u.user.obj.map(_.id_).getOrElse("")
+    val accountOwner = u.id_
     val message =
       AddBankAccountCredentials(
         id,
@@ -138,7 +138,7 @@ class BankingCrendetials{
     }
   }
 
-  private def renderForm(t: Token, u: OBPUser) = {
+  private def renderForm(t: Token, u: APIUser) = {
 
     /**
     *
@@ -182,7 +182,7 @@ class BankingCrendetials{
   def render = {
     RequestToken.is match {
       case Full(token) if(token.isValid) =>
-        OBPUser.currentUser match {
+        User.is match {
           case Full(user) => {
             renderForm(token, user)
           }

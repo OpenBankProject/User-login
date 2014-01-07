@@ -3,6 +3,7 @@ package code.util
 import net.liftweb.http.SessionVar
 import net.liftweb.common.{Box, Empty}
 import code.model.Token
+import code.model.dataAccess.APIUser
 
 /**
 * a request token singleton unique per session.
@@ -14,3 +15,5 @@ import code.model.Token
 * is responding to different HTTP requests.
 */
 object RequestToken extends SessionVar[Box[Token]](Empty)
+
+object User extends SessionVar[Box[APIUser]](Empty)
