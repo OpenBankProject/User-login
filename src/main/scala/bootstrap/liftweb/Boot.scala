@@ -180,8 +180,8 @@ class Boot extends Loggable{
     // Use jQuery 1.4
     LiftRules.jsArtifacts = net.liftweb.http.js.jquery.JQuery14Artifacts
 
-    LiftRules.ajaxStart = Full( () => JsCmds.JsShowId("ajax-spinner") & Helper.JsHideByClass("hide-during-ajax") )
-    LiftRules.ajaxEnd = Full( () => JsCmds.JsHideId("ajax-spinner") )
+    LiftRules.ajaxStart = Full( () => JsCmds.JsShowId("ajax-spinner") & Helper.JsHideByClass("hide-during-ajax") &  Helper.JsHideByClass("error"))
+    LiftRules.ajaxEnd = Full( () => JsCmds.JsHideId("ajax-spinner") & Helper.JsShowByClass("hide-during-ajax") )
 
     // Force the request to be UTF-8
     LiftRules.early.append(_.setCharacterEncoding("UTF-8"))

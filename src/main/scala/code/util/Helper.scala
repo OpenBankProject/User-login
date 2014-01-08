@@ -6,4 +6,8 @@ object Helper{
   case class JsHideByClass(className: String) extends JsCmd {
     def toJsCmd = s"$$('.$className').hide()"
   }
+
+  case class JsShowByClass(className: String) extends JsCmd {
+    def toJsCmd = s"$$('.$className').show()"
+  }
 }

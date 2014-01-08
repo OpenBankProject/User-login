@@ -11,7 +11,7 @@ import scala.xml.NodeSeq
 import scala.util.{Either, Right, Left}
 
 import code.model.dataAccess.APIUser
-import code.util.{RequestToken, GermanBanks, BankAccountSender, User}
+import code.util.{RequestToken, GermanBanks, BankAccountSender, User, Helper}
 import code.model.Token
 import code.pgp.PgpEncryption
 import com.tesobe.model.AddBankAccountCredentials
@@ -150,7 +150,7 @@ class BankingCrendetials{
         updatePage(messageId)
         //TODO: redirect in case of success with the token
         //show an error message other wise
-        Noop
+        Helper.JsHideByClass("hide-during-ajax")
       }
       else{
         errors.foreach{
@@ -161,18 +161,20 @@ class BankingCrendetials{
     }
 
     val countries  = defaultCountry :: "Germany" :: Nil
-    val availableBanks = GermanBanks.getAvaliableBanks()
-    val banks: Seq[String] = availableBanks.keySet.toSeq :+ defaultBank
-
+    val availableBanks = GermanBanks.getAvaliableBanks() map {
+      case (bankname, bankId) => (s"$bankname ($bankId)", bankId)
+    }
+    val banks: Seq[String] =  Seq(defaultBank) ++ availableBanks.keySet.toSeq.sortWith(_.toLowerCase < _.toLowerCase)
     "form [action]" #> {S.uri}&
     "#countrySelect"  #>
       SHtml.selectElem(countries,Full(country.is))(
         (v : String) => country.set(v)
       ) &
     "#bankSelect" #>
-      //TODO: change the default case to be the latest value rather than head
       SHtml.selectElem(banks,Full(banks.head))(
-        (v : String) => bank.set(availableBanks(v))
+        (bankname : String) => availableBanks.get(bankname) map {
+          bankId => bank.set(bankId)
+          }
       ) &
     "#accountNumber" #> SHtml.textElem(accountNumber,("placeholder","123456")) &
     "#accountPin" #> SHtml.passwordElem(accountPin,("placeholder","******")) &

@@ -133,7 +133,6 @@ object OAuthAuthorisation {
         else {
           val currentUrl = S.uriAndQueryString.getOrElse("/")
           if(OBPUser.loggedIn_?) {
-            println("OBPUSER logged in so logout")
             OBPUser.logUserOut()
             //Bit of a hack here, but for reasons I haven't had time to discover,
             //if this page doesn't get refreshed here the session vars

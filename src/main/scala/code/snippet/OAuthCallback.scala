@@ -66,10 +66,15 @@ class OAuthCallback{
   }
 
   def createAPIUser(user_id: String, host: String, token: Token) = {
-   val user = APIUser.create
-      .provider_(host)
-      .providerId(user_id)
-      // .saveMe
+    val user = APIUser.find(By(APIUser.providerId, user_id), By(APIUser.provider_, host)) match {
+      case Full(u) => u
+      case _ => {
+        APIUser.create
+        .provider_(host)
+        .providerId(user_id)
+        .saveMe
+      }
+    }
 
     User.set(Full(user))
     RequestToken.set(Full(token))
