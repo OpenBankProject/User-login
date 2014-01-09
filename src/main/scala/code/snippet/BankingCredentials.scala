@@ -33,20 +33,21 @@ import net.liftweb.http.{S,SHtml,RequestVar}
 import net.liftweb.http.js.{JsCmd, JsCmds}
 import JsCmds._
 import net.liftweb.http.js.jquery.JqJsCmds._
+import net.liftweb.http.LiftRules
 import net.liftweb.util._
 import Helpers._
-import net.liftweb.common.{Full, Failure, Empty, Box}
-import scala.xml.NodeSeq
+import net.liftweb.common.{Full, Failure, Empty, Box, Loggable}
+import scala.xml.{NodeSeq, Unparsed}
 import scala.util.{Either, Right, Left}
 
 import code.model.dataAccess.APIUser
-import code.util.{RequestToken, GermanBanks, BankAccountSender, User, Helper}
-import code.model.Token
+import code.util.{BankAccountSender, Helper}
+import code.model.{Token, RequestToken, CurrentUser, GermanBanks}
 import code.pgp.PgpEncryption
 import com.tesobe.model.AddBankAccountCredentials
 
 
-class BankingCrendetials{
+class BankingCrendetials extends Loggable{
 
   class FormField[T](
     defaultValue: => T,
@@ -132,7 +133,7 @@ class BankingCrendetials{
     id
   }
 
-  private def updatePage(messageId: String)= {
+  private def updatePage(messageId: String): Box[Unit] = {
     import net.liftweb.actor.{
       LAFuture,
       LiftActor
@@ -144,30 +145,51 @@ class BankingCrendetials{
     }
     import code.util.ResponseAMQPListener
 
-    val future: LAFuture[Response] = new LAFuture()
+    val response: LAFuture[Response] = new LAFuture()
     // watingActor waits for acknowledgment if the bank account was added
     object waitingActor extends LiftActor{
       def messageHandler = {
         case r: Response => {
-          future.complete(Full(r))
+          response.complete(Full(r))
         }
       }
     }
     new ResponseAMQPListener(waitingActor, messageId)
-    future onSuccess{response =>
-      response match {
-        case _: SuccessResponse => S.notice("info", response.message)
-        case _: ErrorResponse => S.notice("info", response.message)
-      }
+
+    //TODO: change that to be asynchronous
+    // we try to wait for the response for a amount time that is less than
+    // lift ajax post timeout
+    response.get(LiftRules.ajaxPostTimeout - 2000) match {
+      case Full(r) =>
+        r match {
+          case _: SuccessResponse => {
+            Full({})
+          }
+          case _: ErrorResponse =>{
+           Failure(r.message)
+          }
+        }
+      case _ => Failure("not_saved")
     }
 
-    future.onFail {
-      case Failure(msg, _, _) => S.notice("info", msg)
-      case _ => S.notice("info", S.??("error_try_later"))
-    }
   }
 
-  private def renderForm(t: Token, u: APIUser) = {
+  private def generateVerifier(token: Token, user: APIUser) :Box[String] = {
+    if (token.verifier.isEmpty) {
+      val randomVerifier = token.gernerateVerifier
+      token.userId(user.id_)
+      if (token.save())
+        Full(randomVerifier)
+      else{
+        logger.warn(s"Could not save token ${token.key}")
+        Empty
+      }
+    }
+    else
+      Full(token.verifier)
+  }
+
+  private def renderForm(token: Token, user: APIUser) = {
 
     /**
     *
@@ -175,17 +197,52 @@ class BankingCrendetials{
     def processInputs(): JsCmd = {
       val errors = validate(fields)
       if(errors.isEmpty){
-        val messageId = processData(t,u)
-        updatePage(messageId)
-        //TODO: redirect in case of success with the token
-        //show an error message other wise
-        Helper.JsHideByClass("hide-during-ajax")
+        updatePage(processData(token,user)) match {
+          case Full(_) => {
+            //redirect or show the verifier
+
+            generateVerifier(token, user) match {
+              case Full(v) => {
+                if (token.callbackURL.is == "oob")
+                  JsHideId("error") &
+                  SetHtml("verifier",Unparsed(v)) &
+                  JsShowId("verifierBloc") &
+                  Helper.JsHideByClass("hide-during-ajax")
+                else {
+                  //redirect the user to the application with the verifier
+                  val redirectionUrl =
+                    Helpers.appendParams(
+                      token.callbackURL,
+                      Seq(("oauth_token", token.key),("oauth_verifier", v))
+                    )
+                  S.redirectTo(redirectionUrl)
+                  Noop
+                }
+              }
+              case _ => {
+                SetHtml("error", Unparsed(S.??("error_try_later"))) &
+                Helper.JsHideByClass("hide-during-ajax")
+              }
+            }
+          }
+          case Failure(msg,_, _) => {
+            //show an error message other wise
+            val error = SHtml.span(Unparsed(msg), Noop, ("class","error"))
+            SetHtml("error", error) &
+            Helper.JsHideByClass("hide-during-ajax")
+          }
+          case _ => {
+            val error = <span class="error">S.??("error_try_later")</span>
+            SetHtml("error",error) &
+            Helper.JsHideByClass("hide-during-ajax")
+          }
+        }
       }
       else{
         errors.foreach{
           e => S.error(e._1, e._2)
         }
-        Noop
+        Helper.JsShowByClass("hide-during-ajax")
       }
     }
 
@@ -205,31 +262,35 @@ class BankingCrendetials{
           bankId => bank.set(bankId)
           }
       ) &
-    "#accountNumber" #> SHtml.textElem(accountNumber,("placeholder","123456")) &
-    "#accountPin" #> SHtml.passwordElem(accountPin,("placeholder","******")) &
+    "#accountNumber" #> SHtml.textElem(accountNumber,("placeholder","123456789")) &
+    "#accountPin" #> SHtml.passwordElem(accountPin,("placeholder","***********")) &
     "#processSubmit" #> SHtml.hidden(processInputs) &
     "#saveBtn [value]" #> S.??("save")
   }
 
   def render = {
+    def hideCredentialsForm() = {
+      "#credentialsForm" #> NodeSeq.Empty
+    }
+
     RequestToken.is match {
       case Full(token) if(token.isValid) =>
-        User.is match {
+        CurrentUser.is match {
           case Full(user) => {
             renderForm(token, user)
           }
           case _ => {
-            S.error("loginError", S.??("log_in_required"))
-            "#credentialsForm" #> NodeSeq.Empty
+            S.error("error", S.??("login_required"))
+            hideCredentialsForm()
           }
         }
       case Full(token) => {
-        S.error("loginError", "Token expired")
-        "#credentialsForm" #> NodeSeq.Empty
+        S.error("error", "Token expired")
+        hideCredentialsForm()
       }
       case _ =>{
-        S.error("loginError", "Token not found")
-        "#credentialsForm" #> NodeSeq.Empty
+        S.error("error", "Token not found")
+        hideCredentialsForm()
       }
     }
   }

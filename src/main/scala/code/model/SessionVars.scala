@@ -26,11 +26,10 @@ Berlin 13359, Germany
   Ayoub Benali: ayoub AT tesobe DOT com
 
  */
-package code.util
+package code.model
 
 import net.liftweb.http.SessionVar
 import net.liftweb.common.{Box, Empty}
-import code.model.Token
 import code.model.dataAccess.APIUser
 
 /**
@@ -44,4 +43,4 @@ import code.model.dataAccess.APIUser
 */
 object RequestToken extends SessionVar[Box[Token]](Empty)
 
-object User extends SessionVar[Box[APIUser]](Empty)
+object CurrentUser extends SessionVar[Box[APIUser]](Empty)

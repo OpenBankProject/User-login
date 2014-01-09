@@ -100,6 +100,25 @@ object Consumer extends Consumer with LongKeyedMetaMapper[Consumer] {
 
 }
 
+class Nonce extends LongKeyedMapper[Nonce] {
+
+  def getSingleton = Nonce
+  def primaryKeyField = id
+  object id extends MappedLongIndex(this)
+  object consumerkey extends MappedString(this, 250) //we store the consumer Key and we don't need to keep a reference to the token consumer as foreign key
+  object tokenKey extends MappedString(this, 250){ //we store the token Key and we don't need to keep a reference to the token object as foreign key
+    override def defaultValue = ""
+  }
+  object timestamp extends MappedDateTime(this){
+  override  def toString = {
+     //returns as a string the time in milliseconds
+      timestamp.get.getTime().toString()
+    }
+  }
+  object value extends MappedString(this,250)
+
+}
+object Nonce extends Nonce with LongKeyedMetaMapper[Nonce]{}
 
 class Token extends LongKeyedMapper[Token]{
   def getSingleton = Token

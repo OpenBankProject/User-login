@@ -41,7 +41,7 @@ import net.liftweb.http.js.JsCmds.RedirectTo
 import code.model.dataAccess.APIUser
 import code.model.Token
 import code.model.Token._
-import code.util.{RequestToken, User}
+import code.model.{RequestToken, CurrentUser}
 
 class OAuthCallback{
   def foo:CssSel = {
@@ -105,7 +105,7 @@ class OAuthCallback{
       }
     }
 
-    User.set(Full(user))
+    CurrentUser.set(Full(user))
     RequestToken.set(Full(token))
     S.redirectTo("../banking-credentials")
   }

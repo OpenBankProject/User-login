@@ -27,7 +27,7 @@ Berlin 13359, Germany
   Nina Gänsdorfer: nina AT tesobe DOT com
 
  */
- package code.util
+ package code.model
 
 import net.liftweb.common.Loggable
 import net.liftweb.util.Helpers.tryo

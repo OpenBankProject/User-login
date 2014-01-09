@@ -48,6 +48,7 @@ import java.io.FileInputStream
 import java.io.File
 import code.util.Helper
 import net.liftweb.http.js.JsCmds
+import code.api.OAuthHandshake
 
 /**
  * A class that's instantiated early and run.  It allows the application
@@ -181,7 +182,7 @@ class Boot extends Loggable{
     LiftRules.jsArtifacts = net.liftweb.http.js.jquery.JQuery14Artifacts
 
     LiftRules.ajaxStart = Full( () => JsCmds.JsShowId("ajax-spinner") & Helper.JsHideByClass("hide-during-ajax") &  Helper.JsHideByClass("error"))
-    LiftRules.ajaxEnd = Full( () => JsCmds.JsHideId("ajax-spinner") & Helper.JsShowByClass("hide-during-ajax") )
+    LiftRules.ajaxEnd = Full( () => JsCmds.JsHideId("ajax-spinner") )
 
     // Force the request to be UTF-8
     LiftRules.early.append(_.setCharacterEncoding("UTF-8"))
@@ -198,5 +199,8 @@ class Boot extends Loggable{
     // Make a transaction span the whole HTTP request
     S.addAround(DB.buildLoanWrapper)
 
+    LiftRules.statelessDispatchTable.append(OAuthHandshake)
+    LiftRules.ajaxRetryCount = Full(0)
+    LiftRules.ajaxPostTimeout = seconds(20) toInt
   }
 }

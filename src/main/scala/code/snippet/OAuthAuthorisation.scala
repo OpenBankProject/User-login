@@ -34,10 +34,11 @@ import code.model.AppType._
 import code.model.TokenType
 import TokenType._
 import code.model.dataAccess.OBPUser
+import code.model.CurrentUser
 import scala.xml.NodeSeq
 import net.liftweb.util.Helpers._
+import code.model.RequestToken
 
-import code.util.RequestToken
 object OAuthAuthorisation {
 
   private def shouldNotLogUserOut() : Boolean = {
@@ -128,6 +129,7 @@ object OAuthAuthorisation {
         */
         if (OBPUser.loggedIn_? && shouldNotLogUserOut()) {
           RequestToken.set(Full(appToken))
+          CurrentUser.set(OBPUser.currentUser.get.user)
           S.redirectTo("/banking-credentials")
         }
         else {
