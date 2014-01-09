@@ -1,4 +1,4 @@
-/**
+<!--
 Open Bank Project - API
 Copyright (C) 2011, 2013, TESOBE / Music Pictures Ltd
 
@@ -23,28 +23,16 @@ Berlin 13359, Germany
   This product includes software developed at
   TESOBE (http://www.tesobe.com/)
   by
-  Simon Redfern : simon AT tesobe DOT com
-  Stefan Bethge : stefan AT tesobe DOT com
-  Everett Sochowski : everett AT tesobe DOT com
   Ayoub Benali: ayoub AT tesobe DOT com
+  Nina Gänsdorfer: nina AT tesobe DOT com
+-->
 
- */
+<div id="main" class="lift:surround?with=default;at=content">
+  <div class="lift:OAuthCallback.foo" id="redirectSection">
+    <div id="post_result">
+      <p id="user_id">Waiting for user id.</p>
+      <p id="token">Waiting for token.</p>
+    </div>
+  </div>
+</div>
 
-package code.model
-
-import net.liftweb.json.JsonDSL._
-import code.model.dataAccess.LocalStorage
-import net.liftweb.common.Box
-
-trait User {
-  def id_ : String
-  def provider : String
-  def emailAddress : String
-  def theFirstName : String
-  def theLastName : String
-}
-
-object User {
-  def findById(id : String) : Box[User] =
-    LocalStorage.getUser(id)
-}

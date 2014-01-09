@@ -23,28 +23,24 @@ Berlin 13359, Germany
   This product includes software developed at
   TESOBE (http://www.tesobe.com/)
   by
-  Simon Redfern : simon AT tesobe DOT com
-  Stefan Bethge : stefan AT tesobe DOT com
-  Everett Sochowski : everett AT tesobe DOT com
   Ayoub Benali: ayoub AT tesobe DOT com
 
  */
-
 package code.model
 
-import net.liftweb.json.JsonDSL._
-import code.model.dataAccess.LocalStorage
-import net.liftweb.common.Box
+import net.liftweb.http.SessionVar
+import net.liftweb.common.{Box, Empty}
+import code.model.dataAccess.APIUser
 
-trait User {
-  def id_ : String
-  def provider : String
-  def emailAddress : String
-  def theFirstName : String
-  def theLastName : String
-}
+/**
+* a request token singleton unique per session.
+* The purpose is to share the request token between the pages without reloading
+* each time the token form the database.
+*
+* Note: SessionVar is used rather that RequestVar because RequestVar is valid
+* only for the same HTTP request (same page) while rendering different pages
+* is responding to different HTTP requests.
+*/
+object RequestToken extends SessionVar[Box[Token]](Empty)
 
-object User {
-  def findById(id : String) : Box[User] =
-    LocalStorage.getUser(id)
-}
+object CurrentUser extends SessionVar[Box[APIUser]](Empty)

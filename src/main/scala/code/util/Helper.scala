@@ -23,28 +23,19 @@ Berlin 13359, Germany
   This product includes software developed at
   TESOBE (http://www.tesobe.com/)
   by
-  Simon Redfern : simon AT tesobe DOT com
-  Stefan Bethge : stefan AT tesobe DOT com
-  Everett Sochowski : everett AT tesobe DOT com
   Ayoub Benali: ayoub AT tesobe DOT com
 
  */
+package code.util
 
-package code.model
+import net.liftweb.http.js.JsCmd
 
-import net.liftweb.json.JsonDSL._
-import code.model.dataAccess.LocalStorage
-import net.liftweb.common.Box
+object Helper{
+  case class JsHideByClass(className: String) extends JsCmd {
+    def toJsCmd = s"$$('.$className').hide()"
+  }
 
-trait User {
-  def id_ : String
-  def provider : String
-  def emailAddress : String
-  def theFirstName : String
-  def theLastName : String
-}
-
-object User {
-  def findById(id : String) : Box[User] =
-    LocalStorage.getUser(id)
+  case class JsShowByClass(className: String) extends JsCmd {
+    def toJsCmd = s"$$('.$className').show()"
+  }
 }

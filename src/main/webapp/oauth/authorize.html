@@ -1,0 +1,77 @@
+<!--
+Open Bank Project - API
+Copyright (C) 2011, 2013, TESOBE / Music Pictures Ltd
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU Affero General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU Affero General Public License for more details.
+
+You should have received a copy of the GNU Affero General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+Email: contact@tesobe.com
+TESOBE / Music Pictures Ltd
+Osloerstrasse 16/17
+Berlin 13359, Germany
+
+  This product includes software developed at
+  TESOBE (http://www.tesobe.com/)
+  by
+  Ayoub Benali: ayoub AT tesobe DOT com
+-->
+
+<div id="main" class="lift:surround?with=default;at=content">
+  <!-- Valid Token -->
+  <div class="lift:OAuthAuthorisation.tokenCheck" id="authorizeSection">
+    <div class="lift:Msg?id=tokenError&errorClass=error">message</div>
+    <div id="loginForm">
+      <!-- LOGGED OUT -->
+      <form action="." method="post" class="login">
+        <TABLE>
+          <tbody>
+            <tr>
+              <td colspan="2" >
+                The application <span id="applicationName"> web app </span>
+                wants to access to your data, please login to agree.
+            </tr>
+            <tr>
+              <td>
+                <label for="usernameField">Username</label>
+              </td>
+              <td>
+                <input id="usernameField" class="username field"
+                  type="text" name="username" tabindex=1/>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <label for="passwordField">Password</label>
+              </td>
+              <td>
+                <input id="passwordField" class="password field"
+                  type="password" name="password" tabindex=2 />
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <a href="#" class="forgot" tabindex=5>Forgotten?</a>
+                <a href="#" class="signup" tabindex=4>Sign up</a>
+              </td>
+              <td>
+                <input class="submit button" type="submit"
+                  value="Login" tabindex=3/>
+              </td>
+            </tr>
+          </tbody>
+        </TABLE>
+      </form>
+    </div>
+  </div>
+</div>
+

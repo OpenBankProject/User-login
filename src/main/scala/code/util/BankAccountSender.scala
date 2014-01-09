@@ -23,17 +23,15 @@ Berlin 13359, Germany
   This product includes software developed at
   TESOBE (http://www.tesobe.com/)
   by
-  Simon Redfern : simon AT tesobe DOT com
-  Stefan Bethge : stefan AT tesobe DOT com
-  Everett Sochowski : everett AT tesobe DOT com
   Ayoub Benali: ayoub AT tesobe DOT com
+  Nina Gänsdorfer: nina AT tesobe DOT com
 
  */
 package code.util
 
 import com.rabbitmq.client.{ConnectionFactory,Channel}
 import net.liftmodules.amqp.{AMQPSender,StringAMQPSender,AMQPMessage}
-import code.model.BankAccount
+import com.tesobe.model.BankAccount
 import net.liftweb.util._
 
 object BankAccountSender {
@@ -46,11 +44,11 @@ object BankAccountSender {
     setVirtualHost(DEFAULT_VHOST)
   }
 
-              //BankAccountAMQPSender(ConnectionFactory, EXCHANGE, QUEUE_ROUTING_KEY)
+  //BankAccountAMQPSender(ConnectionFactory, EXCHANGE, QUEUE_ROUTING_KEY)
   val amqp = new BankAccountAMQPSender(factory, "directExchange", "management")
 
   def sendMessage(message: BankAccount) = {
-     amqp ! AMQPMessage(message)
+    amqp ! AMQPMessage(message)
   }
 }
 
