@@ -34,6 +34,7 @@ import code.model.AppType._
 import code.model.TokenType
 import TokenType._
 import code.model.dataAccess.OBPUser
+import code.util.User
 import scala.xml.NodeSeq
 import net.liftweb.util.Helpers._
 
@@ -128,12 +129,12 @@ object OAuthAuthorisation {
         */
         if (OBPUser.loggedIn_? && shouldNotLogUserOut()) {
           RequestToken.set(Full(appToken))
+          User.set(OBPUser.currentUser.get.user)
           S.redirectTo("/banking-credentials")
         }
         else {
           val currentUrl = S.uriAndQueryString.getOrElse("/")
           if(OBPUser.loggedIn_?) {
-            println("OBPUSER logged in so logout")
             OBPUser.logUserOut()
             //Bit of a hack here, but for reasons I haven't had time to discover,
             //if this page doesn't get refreshed here the session vars

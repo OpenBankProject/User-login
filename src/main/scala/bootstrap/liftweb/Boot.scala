@@ -168,6 +168,7 @@ class Boot extends Loggable{
     // Build SiteMap
     val sitemap = List(
           Menu.i("OAuth") / "oauth" / "authorize", //OAuth authorization page
+          Menu.i("Callback") / "oauth" / "callback",
           Menu.i("Banking Credentials") / "banking-credentials"
 
     )
@@ -180,7 +181,7 @@ class Boot extends Loggable{
     // Use jQuery 1.4
     LiftRules.jsArtifacts = net.liftweb.http.js.jquery.JQuery14Artifacts
 
-    LiftRules.ajaxStart = Full( () => JsCmds.JsShowId("ajax-spinner") & Helper.JsHideByClass("hide-during-ajax") )
+    LiftRules.ajaxStart = Full( () => JsCmds.JsShowId("ajax-spinner") & Helper.JsHideByClass("hide-during-ajax") &  Helper.JsHideByClass("error"))
     LiftRules.ajaxEnd = Full( () => JsCmds.JsHideId("ajax-spinner") )
 
     // Force the request to be UTF-8

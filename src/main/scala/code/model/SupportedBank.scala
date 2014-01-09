@@ -24,24 +24,21 @@ Berlin 13359, Germany
   TESOBE (http://www.tesobe.com/)
   by
   Ayoub Benali: ayoub AT tesobe DOT com
+  Nina Gänsdorfer: nina AT tesobe DOT com
 
  */
-package code.util
+package code.model
 
-import net.liftweb.http.SessionVar
-import net.liftweb.common.{Box, Empty}
-import code.model.Token
-import code.model.dataAccess.APIUser
+case class HBCIBank(
+  val name: String,
+  val hbci_url: String,
+  val hbci_port: String
+)
 
-/**
-* a request token singleton unique per session.
-* The purpose is to share the request token between the pages without reloading
-* each time the token form the database.
-*
-* Note: SessionVar is used rather that RequestVar because RequestVar is valid
-* only for the same HTTP request (same page) while rendering different pages
-* is responding to different HTTP requests.
-*/
-object RequestToken extends SessionVar[Box[Token]](Empty)
+case class SupportedBank(
+  val name: String,
+  val national_identifier: String
+)
 
-object User extends SessionVar[Box[APIUser]](Empty)
+case class SupportedBanks(
+  val banks: List[SupportedBank])

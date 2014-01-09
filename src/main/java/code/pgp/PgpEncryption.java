@@ -323,10 +323,7 @@ public class PgpEncryption {
 
     public static void main(String[] args) throws Exception {
         String encrypted = encryptToFile("Hello world","pub.asc","enc.asc");
-        System.out.println("\nencrypted data = '" + new String(encrypted) + "'");
-
         String decrypted = decryptFromFile("open sesame", "secret.asc", "enc.asc");
-        System.out.println("\ndecrypted data = '" + decrypted + "'");
 
     }
 }

@@ -1,29 +1,32 @@
- /**
-Open Bank Project
+/**
+Open Bank Project - API
+Copyright (C) 2011, 2013, TESOBE / Music Pictures Ltd
 
-Copyright 2011,2012 TESOBE / Music Pictures Ltd.
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU Affero General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
 
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU Affero General Public License for more details.
 
-http://www.apache.org/licenses/LICENSE-2.0
+You should have received a copy of the GNU Affero General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
+Email: contact@tesobe.com
+TESOBE / Music Pictures Ltd
+Osloerstrasse 16/17
+Berlin 13359, Germany
 
- Open Bank Project (http://www.openbankproject.com)
-      Copyright 2011,2012 TESOBE / Music Pictures Ltd
+  This product includes software developed at
+  TESOBE (http://www.tesobe.com/)
+  by
+  Ayoub Benali: ayoub AT tesobe DOT com
+  Nina Gänsdorfer: nina AT tesobe DOT com
 
-      This product includes software developed at
-      TESOBE (http://www.tesobe.com/)
-    by
-    Ayoub Benali : ayoub AT tesobe Dot com
-*/
-
+ */
 package code.snippet
 
 import net.liftweb.http.{S,SHtml,RequestVar}
@@ -37,8 +40,8 @@ import net.liftweb.common.{Full, Failure, Empty, Box, Loggable}
 import scala.xml.{NodeSeq, Unparsed}
 import scala.util.{Either, Right, Left}
 
-import code.model.dataAccess.OBPUser
-import code.util.{RequestToken, GermanBanks, BankAccountSender}
+import code.model.dataAccess.APIUser
+import code.util.{RequestToken, GermanBanks, BankAccountSender, User, Helper}
 import code.model.Token
 import code.pgp.PgpEncryption
 import com.tesobe.model.AddBankAccountCredentials
@@ -112,12 +115,12 @@ class BankingCrendetials extends Loggable{
       }
   }
 
-  private def processData(t: Token, u: OBPUser): String = {
+  private def processData(t: Token, u: APIUser): String = {
     val id = randomString(8)
     val publicKey = Props.get("publicKeyPath").getOrElse("")
     val encryptedPin =
       PgpEncryption.encryptToString(accountPin.is, publicKey)
-    val accountOwner = u.user.obj.map(_.id_).getOrElse("")
+    val accountOwner = u.id_
     val message =
       AddBankAccountCredentials(
         id,
@@ -171,10 +174,10 @@ class BankingCrendetials extends Loggable{
 
   }
 
-  private def generateVerifier(token: Token, user: OBPUser) :Box[String] = {
+  private def generateVerifier(token: Token, user: APIUser) :Box[String] = {
     if (token.verifier.isEmpty) {
       val randomVerifier = token.gernerateVerifier
-      token.userId(user.user.obj.map{_.id_}.getOrElse(""))
+      token.userId(user.id_)
       if (token.save())
         Full(randomVerifier)
       else{
@@ -186,7 +189,7 @@ class BankingCrendetials extends Loggable{
       Full(token.verifier)
   }
 
-  private def renderForm(token: Token, user: OBPUser) = {
+  private def renderForm(token: Token, user: APIUser) = {
 
     /**
     *
@@ -203,7 +206,8 @@ class BankingCrendetials extends Loggable{
                 if (token.callbackURL.is == "oob")
                   JsHideId("error") &
                   SetHtml("verifier",Unparsed(v)) &
-                  JsShowId("verifierBloc")
+                  JsShowId("verifierBloc") &
+                  Helper.JsHideByClass("hide-during-ajax")
                 else {
                   //redirect the user to the application with the verifier
                   val redirectionUrl =
@@ -216,16 +220,21 @@ class BankingCrendetials extends Loggable{
                 }
               }
               case _ => {
-                SetHtml("error", Unparsed("error, please try later"))
+                SetHtml("error", Unparsed("error, please try later")) &
+                Helper.JsHideByClass("hide-during-ajax")
               }
             }
           }
           case Failure(msg,_, _) => {
             //show an error message other wise
-            SetHtml("error", Unparsed(msg))
+            val error = SHtml.span(Unparsed(msg), Noop, ("class","error"))
+            SetHtml("error", error) &
+            Helper.JsHideByClass("hide-during-ajax")
           }
           case _ => {
-            SetHtml("error", Unparsed("error, please try later"))
+            val error = <span class="error">"error, please try later"</span>
+            SetHtml("error",error) &
+            Helper.JsHideByClass("hide-during-ajax")
           }
         }
       }
@@ -233,29 +242,30 @@ class BankingCrendetials extends Loggable{
         errors.foreach{
           e => S.error(e._1, e._2)
         }
-        Noop
+        Helper.JsShowByClass("hide-during-ajax")
       }
     }
 
     val countries  = defaultCountry :: "Germany" :: Nil
-    val availableBanks = GermanBanks.getAvaliableBanks()
-    val banks: Seq[String] = availableBanks.keySet.toSeq :+ defaultBank
-
+    val availableBanks = GermanBanks.getAvaliableBanks() map {
+      case (bankname, bankId) => (s"$bankname ($bankId)", bankId)
+    }
+    val banks: Seq[String] =  Seq(defaultBank) ++ availableBanks.keySet.toSeq.sortWith(_.toLowerCase < _.toLowerCase)
     "form [action]" #> {S.uri}&
     "#countrySelect"  #>
       SHtml.selectElem(countries,Full(country.is))(
         (v : String) => country.set(v)
       ) &
     "#bankSelect" #>
-      //TODO: change the default case to be the latest value rather than head
       SHtml.selectElem(banks,Full(banks.head))(
-        (v : String) => bank.set(availableBanks(v))
+        (bankname : String) => availableBanks.get(bankname) map {
+          bankId => bank.set(bankId)
+          }
       ) &
     "#accountNumber" #> SHtml.textElem(accountNumber,("placeholder","123456789")) &
     "#accountPin" #> SHtml.passwordElem(accountPin,("placeholder","***********")) &
     "#processSubmit" #> SHtml.hidden(processInputs)
   }
-
 
   def render = {
     def hideCredentialsForm() = {
@@ -264,7 +274,7 @@ class BankingCrendetials extends Loggable{
 
     RequestToken.is match {
       case Full(token) if(token.isValid) =>
-        OBPUser.currentUser match {
+        User.is match {
           case Full(user) => {
             renderForm(token, user)
           }
