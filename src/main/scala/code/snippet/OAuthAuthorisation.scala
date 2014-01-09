@@ -58,6 +58,9 @@ object OAuthAuthorisation {
       }
 
       "#applicationName" #> c.name & {
+        ".signup * " #> S.??("sign.up") &
+        ".forgot *" #> S.??("lost.password") &
+        ".submit [value]" #> S.??("log.in") &
         ".login [action]" #> OBPUser.loginPageURL &
         ".forgot [href]" #> {
           val href = for {
@@ -164,23 +167,6 @@ object OAuthAuthorisation {
         }
     }
   }
-
-  //callback page
-  //  check tmp token
-  //    if valid
-  //      create OBP user and logged it in
-  //        redirect to bank details page
-  //    else
-  //      show error message
-  //
-  //bank details page
-  //  check the userlogged in
-  //    put data in message queue
-  //    //AUTH verifier
-  //    // redirect
-  //  else
-  //    show error message
-
 
   def tokenCheck = {
     S.param("oauth_token") match {
