@@ -68,29 +68,29 @@ class BankingCrendetials{
   }
 
   //TODO: use locate for the text to make it available in different languages
-  private val defaultCountry = "Choose a country"
-  private val defaultBank = "Choose a bank"
+  private val defaultCountry = S.??("choose_country")
+  private val defaultBank = S.??("choose_bank")
 
   private object country extends FormField[String](
     defaultCountry,
-    "Country not selected ! ",
+     S.??("no_country_selected"),
     "countryError"
   )
 
   private object bank extends FormField[String](
     defaultBank,
-    "Bank not selected ! ",
+    S.??("no_bank_selected"),
     "bankError"
   )
   private object accountNumber extends FormField[String](
     "",
-    "Account number is Empty ! ",
+    S.??("account_number_empty"),
     "accountNumberError"
   )
 
   private object accountPin extends FormField[String](
     "",
-    "Account pin is Empty ! ",
+    S.??("account_pin_empty"),
     "accountPinError"
   )
 
@@ -163,7 +163,7 @@ class BankingCrendetials{
 
     future.onFail {
       case Failure(msg, _, _) => S.notice("info", msg)
-      case _ => S.notice("info", "error please try later")
+      case _ => S.notice("info", S.??("error_try_later"))
     }
   }
 
@@ -189,7 +189,7 @@ class BankingCrendetials{
       }
     }
 
-    val countries  = defaultCountry :: "Germany" :: Nil
+    val countries  = defaultCountry :: S.??("germany") :: Nil
     val availableBanks = GermanBanks.getAvaliableBanks() map {
       case (bankname, bankId) => (s"$bankname ($bankId)", bankId)
     }
@@ -207,7 +207,8 @@ class BankingCrendetials{
       ) &
     "#accountNumber" #> SHtml.textElem(accountNumber,("placeholder","123456")) &
     "#accountPin" #> SHtml.passwordElem(accountPin,("placeholder","******")) &
-    "#processSubmit" #> SHtml.hidden(processInputs)
+    "#processSubmit" #> SHtml.hidden(processInputs) &
+    "#saveBtn [value]" #> S.??("save")
   }
 
   def render = {
@@ -218,7 +219,7 @@ class BankingCrendetials{
             renderForm(token, user)
           }
           case _ => {
-            S.error("loginError", "you need to be logged in to see the form")
+            S.error("loginError", S.??("log_in_required"))
             "#credentialsForm" #> NodeSeq.Empty
           }
         }
