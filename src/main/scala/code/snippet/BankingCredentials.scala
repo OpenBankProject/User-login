@@ -120,14 +120,16 @@ class BankingCrendetials extends Loggable{
     val publicKey = Props.get("publicKeyPath").getOrElse("")
     val encryptedPin =
       PgpEncryption.encryptToString(accountPin.is, publicKey)
-    val accountOwner = u.id_
+    val accountOwnerId = u.id_
+    val accountOwnerProvider = u.provider
     val message =
       AddBankAccountCredentials(
         id,
         accountNumber,
         bank,
         encryptedPin,
-        accountOwner
+        accountOwnerId,
+        accountOwnerProvider
       )
     BankAccountSender.sendMessage(message)
     id
