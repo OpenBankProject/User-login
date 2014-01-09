@@ -1,13 +1,40 @@
+ /**
+Open Bank Project
+
+Copyright 2011,2012 TESOBE / Music Pictures Ltd.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+
+ Open Bank Project (http://www.openbankproject.com)
+      Copyright 2011,2012 TESOBE / Music Pictures Ltd
+
+      This product includes software developed at
+      TESOBE (http://www.tesobe.com/)
+    by
+    Ayoub Benali : ayoub AT tesobe Dot com
+*/
+
 package code.snippet
 
 import net.liftweb.http.{S,SHtml,RequestVar}
 import net.liftweb.http.js.{JsCmd, JsCmds}
 import JsCmds._
 import net.liftweb.http.js.jquery.JqJsCmds._
+import net.liftweb.http.LiftRules
 import net.liftweb.util._
 import Helpers._
-import net.liftweb.common.{Full, Failure, Empty, Box}
-import scala.xml.NodeSeq
+import net.liftweb.common.{Full, Failure, Empty, Box, Loggable}
+import scala.xml.{NodeSeq, Unparsed}
 import scala.util.{Either, Right, Left}
 
 import code.model.dataAccess.OBPUser
@@ -17,7 +44,7 @@ import code.pgp.PgpEncryption
 import com.tesobe.model.AddBankAccountCredentials
 
 
-class BankingCrendetials{
+class BankingCrendetials extends Loggable{
 
   class FormField[T](
     defaultValue: => T,
@@ -103,7 +130,7 @@ class BankingCrendetials{
     id
   }
 
-  private def updatePage(messageId: String)= {
+  private def updatePage(messageId: String): Box[Unit] = {
     import net.liftweb.actor.{
       LAFuture,
       LiftActor
@@ -115,30 +142,51 @@ class BankingCrendetials{
     }
     import code.util.ResponseAMQPListener
 
-    val future: LAFuture[Response] = new LAFuture()
+    val response: LAFuture[Response] = new LAFuture()
     // watingActor waits for acknowledgment if the bank account was added
     object waitingActor extends LiftActor{
       def messageHandler = {
         case r: Response => {
-          future.complete(Full(r))
+          response.complete(Full(r))
         }
       }
     }
     new ResponseAMQPListener(waitingActor, messageId)
-    future onSuccess{response =>
-      response match {
-        case _: SuccessResponse => S.notice("info", response.message)
-        case _: ErrorResponse => S.notice("info", response.message)
-      }
+
+    //TODO: change that to be asynchronous
+    // we try to wait for the response for a amount time that is less than
+    // lift ajax post timeout
+    response.get(LiftRules.ajaxPostTimeout - 2000) match {
+      case Full(r) =>
+        r match {
+          case _: SuccessResponse => {
+            Full({})
+          }
+          case _: ErrorResponse =>{
+           Failure(r.message)
+          }
+        }
+      case _ => Failure("Could not save banking credentials. Please try later.")
     }
 
-    future.onFail {
-      case Failure(msg, _, _) => S.notice("info", msg)
-      case _ => S.notice("info", "error please try later")
-    }
   }
 
-  private def renderForm(t: Token, u: OBPUser) = {
+  private def generateVerifier(token: Token, user: OBPUser) :Box[String] = {
+    if (token.verifier.isEmpty) {
+      val randomVerifier = token.gernerateVerifier
+      token.userId(user.user.obj.map{_.id_}.getOrElse(""))
+      if (token.save())
+        Full(randomVerifier)
+      else{
+        logger.warn(s"Could not save token ${token.key}")
+        Empty
+      }
+    }
+    else
+      Full(token.verifier)
+  }
+
+  private def renderForm(token: Token, user: OBPUser) = {
 
     /**
     *
@@ -146,11 +194,40 @@ class BankingCrendetials{
     def processInputs(): JsCmd = {
       val errors = validate(fields)
       if(errors.isEmpty){
-        val messageId = processData(t,u)
-        updatePage(messageId)
-        //TODO: redirect in case of success with the token
-        //show an error message other wise
-        Noop
+        updatePage(processData(token,user)) match {
+          case Full(_) => {
+            //redirect or show the verifier
+
+            generateVerifier(token, user) match {
+              case Full(v) => {
+                if (token.callbackURL.is == "oob")
+                  JsHideId("errorMessage") &
+                  JsHideId("account") &
+                  SetHtml("verifier",Unparsed(v))
+                else {
+                  //redirect the user to the application with the verifier
+                  val redirectionUrl =
+                    Helpers.appendParams(
+                      token.callbackURL,
+                      Seq(("oauth_token", token.key),("oauth_verifier", v))
+                    )
+                  S.redirectTo(redirectionUrl)
+                  Noop
+                }
+              }
+              case _ => {
+                SetHtml("error", Unparsed("error, please try later"))
+              }
+            }
+          }
+          case Failure(msg,_, _) => {
+            //show an error message other wise
+            SetHtml("error", Unparsed(msg))
+          }
+          case _ => {
+            SetHtml("error", Unparsed("error, please try later"))
+          }
+        }
       }
       else{
         errors.foreach{
@@ -174,12 +251,17 @@ class BankingCrendetials{
       SHtml.selectElem(banks,Full(banks.head))(
         (v : String) => bank.set(availableBanks(v))
       ) &
-    "#accountNumber" #> SHtml.textElem(accountNumber,("placeholder","123456")) &
-    "#accountPin" #> SHtml.passwordElem(accountPin,("placeholder","******")) &
+    "#accountNumber" #> SHtml.textElem(accountNumber,("placeholder","123456789")) &
+    "#accountPin" #> SHtml.passwordElem(accountPin,("placeholder","***********")) &
     "#processSubmit" #> SHtml.hidden(processInputs)
   }
 
+
   def render = {
+    def hideCredentialsForm() = {
+      "#credentialsForm" #> NodeSeq.Empty
+    }
+
     RequestToken.is match {
       case Full(token) if(token.isValid) =>
         OBPUser.currentUser match {
@@ -187,17 +269,17 @@ class BankingCrendetials{
             renderForm(token, user)
           }
           case _ => {
-            S.error("loginError", "you need to be logged in to see the form")
-            "#credentialsForm" #> NodeSeq.Empty
+            S.error("error", "you need to be logged in to see the form")
+            hideCredentialsForm()
           }
         }
       case Full(token) => {
-        S.error("loginError", "Token expired")
-        "#credentialsForm" #> NodeSeq.Empty
+        S.error("error", "Token expired")
+        hideCredentialsForm()
       }
       case _ =>{
-        S.error("loginError", "Token not found")
-        "#credentialsForm" #> NodeSeq.Empty
+        S.error("error", "Token not found")
+        hideCredentialsForm()
       }
     }
   }

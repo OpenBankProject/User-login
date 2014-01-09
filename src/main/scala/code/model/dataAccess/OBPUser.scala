@@ -53,21 +53,20 @@ class OBPUser extends MegaProtoUser[OBPUser] with Logger{
   object user extends MappedLongForeignKey(this, APIUser)
 
   override def save(): Boolean = {
-    if(user == null){
+    if(! (user defined_?)){
       info("user reference is null. We will create an API User")
       val apiUser = APIUser.create
       .firstName(firstName.get)
       .lastName(lastName.get)
       .email(email)
-      .provider_(Props.get("hostname",""))
       .providerId(id.get.toString)
       .saveMe
       user(apiUser)
     }
     else {
+      info("user reference is no null. Tying to update the API User")
       user.obj.map{ u =>{
-          info("user reference is no null. We will update the API User")
-
+          info("API User found ")
           u.firstName(firstName.get)
           .lastName(lastName.get)
           .email(email)

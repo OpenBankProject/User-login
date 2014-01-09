@@ -48,6 +48,7 @@ import java.io.FileInputStream
 import java.io.File
 import code.util.Helper
 import net.liftweb.http.js.JsCmds
+import code.api.OAuthHandshake
 
 /**
  * A class that's instantiated early and run.  It allows the application
@@ -197,5 +198,8 @@ class Boot extends Loggable{
     // Make a transaction span the whole HTTP request
     S.addAround(DB.buildLoanWrapper)
 
+    LiftRules.statelessDispatchTable.append(OAuthHandshake)
+    LiftRules.ajaxRetryCount = Full(0)
+    LiftRules.ajaxPostTimeout = seconds(20) toInt
   }
 }
