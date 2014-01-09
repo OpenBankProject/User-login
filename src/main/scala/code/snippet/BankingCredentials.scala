@@ -201,9 +201,9 @@ class BankingCrendetials extends Loggable{
             generateVerifier(token, user) match {
               case Full(v) => {
                 if (token.callbackURL.is == "oob")
-                  JsHideId("errorMessage") &
-                  JsHideId("account") &
-                  SetHtml("verifier",Unparsed(v))
+                  JsHideId("error") &
+                  SetHtml("verifier",Unparsed(v)) &
+                  JsShowId("verifierBloc")
                 else {
                   //redirect the user to the application with the verifier
                   val redirectionUrl =
