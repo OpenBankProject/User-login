@@ -55,7 +55,12 @@ object GermanBanks extends Loggable{
               secondSplit(5).nonEmpty &&
               secondSplit(7).nonEmpty
             ){
-            availableBanks += ((secondSplit(0),firstSplit(0)))
+            val city =
+              if(secondSplit(1).nonEmpty)
+                s" - ${secondSplit(1)}"
+              else
+                ""
+            availableBanks += ((firstSplit(0), secondSplit(0) + city ))
           }
         }
       }
