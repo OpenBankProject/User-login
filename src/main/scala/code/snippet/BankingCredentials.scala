@@ -68,7 +68,6 @@ class BankingCrendetials extends Loggable{
         Right()
   }
 
-  //TODO: use locate for the text to make it available in different languages
   private val defaultCountry = S.??("choose_country")
   private val defaultBank = S.??("choose_bank")
 
@@ -122,11 +121,13 @@ class BankingCrendetials extends Loggable{
       PgpEncryption.encryptToString(accountPin.is, publicKey)
     val accountOwnerId = u.id_
     val accountOwnerProvider = u.provider
+    val bankName = GermanBanks.getAvaliableBanks().get(bank.get).getOrElse("")
     val message =
       AddBankAccountCredentials(
         id,
         accountNumber,
-        bank,
+        bank.get,
+        bankName,
         encryptedPin,
         accountOwnerId,
         accountOwnerProvider
@@ -250,7 +251,9 @@ class BankingCrendetials extends Loggable{
 
     val countries  = defaultCountry :: S.??("germany") :: Nil
     val availableBanks = GermanBanks.getAvaliableBanks() map {
-      case (bankname, bankId) => (s"$bankname ($bankId)", bankId)
+      case (bankId, bankname) => {
+        (s"$bankname ($bankId)", bankId)
+      }
     }
     val banks: Seq[String] =  Seq(defaultBank) ++ availableBanks.keySet.toSeq.sortWith(_.toLowerCase < _.toLowerCase)
     "form [action]" #> {S.uri}&
