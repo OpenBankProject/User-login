@@ -33,8 +33,9 @@ import com.rabbitmq.client.{ConnectionFactory,Channel}
 import net.liftmodules.amqp.{AMQPSender,StringAMQPSender,AMQPMessage}
 import com.tesobe.model.BankAccount
 import net.liftweb.util._
+import net.liftweb.common.Loggable
 
-object BankAccountSender {
+object BankAccountSender extends Loggable{
   val factory = new ConnectionFactory {
     import ConnectionFactory._
     setHost("localhost")
@@ -48,6 +49,7 @@ object BankAccountSender {
   val amqp = new BankAccountAMQPSender(factory, "directExchange", "management")
 
   def sendMessage(message: BankAccount) = {
+    logger.info(s"sending to the data storage: $message")
     amqp ! AMQPMessage(message)
   }
 }

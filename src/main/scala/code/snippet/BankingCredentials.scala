@@ -166,13 +166,18 @@ class BankingCrendetials extends Loggable{
       case Full(r) =>
         r match {
           case _: SuccessResponse => {
+            logger.info("account saved")
             Full({})
           }
           case _: ErrorResponse =>{
-           Failure(r.message)
+            logger.info(s"could not save account ${r.message}")
+            Failure(r.message)
           }
         }
-      case _ => Failure("not_saved")
+      case _ => {
+        logger.info("data storage time out.")
+        Failure("not saved")
+      }
     }
 
   }
