@@ -29,7 +29,7 @@ Berlin 13359, Germany
  */
 package code.snippet
 
-import net.liftweb.common.{Full, Box, Empty}
+import net.liftweb.common.{Full, Box, Empty, Failure, Loggable}
 import net.liftweb.http.S
 import net.liftweb.util.{Helpers, CssSel}
 import scala.xml.NodeSeq
@@ -37,76 +37,118 @@ import net.liftweb.util.Helpers._
 import net.liftweb.mapper.By
 import java.net.URL
 import net.liftweb.http.js.JsCmds.RedirectTo
+import Helpers.tryo
 
 import code.model.dataAccess.APIUser
 import code.model.Token
-import code.model.Token._
 import code.model.{RequestToken, CurrentUser}
 
-class OAuthCallback{
-  def foo:CssSel = {
+class OAuthCallback extends Loggable{
+  private val NOOP_SELECTOR = "#i_am_an_id_that_should_never_exist" #> ""
+
+  def redirectToBankingCredentials:CssSel = {
     if(S.post_?){
-      val token = S.param("token") match {
-        case Full(tok) => {
-          Token.find(By(Token.thirdPartyApplicationSecret, tok)) match {
-            case Full(foundTok) => {
-              if (foundTok.isValid){
-                foundTok.consumerId.obj match {
-                  case Full(consumer) => {
-                    val url: URL = new URL(consumer.userAuthenticationURL)
-                    val host = url.getHost
-
-                    val user_id = S.param("user_id") match {
-                      case Full(id) => {
-                        createAPIUser(id, host, foundTok)
-                        id
-                      }
-                      case _ => "no id found"
-                    }
-
-                  }
-                  case _ => // do nothing
-                }
-                foundTok.thirdPartyApplicationSecret
-              }
-              else{
-                "token not valid"
-              }
-            }
-            case _ => "no token found in database"
-          }
+      val result =
+        for{
+          tokenParam <- checkParameter("token")
+          userIdParam <- checkParameter("user_id")
+          token <- getToken(tokenParam)
+          url <- getAuthenticationURL(token)
+          host <- getHost(url)
+        } yield{
+          val user = getOrCreateAPIUser(userIdParam, host)
+          setSessionVars(user, token)
         }
-        case _ => "no token found in post request"
-      }
 
-      S.param("user_id") match {
-        case Full(user_id) => {
-          "#user_id * " #> {"User ID: "+user_id} & "#token * " #> {"Token: "+token}
-        }
-        case _ => // "no user id found"
+      result match {
+        case Full(a) => S.redirectTo("../banking-credentials")
+        case Failure(msg, _, _) => S.error("error", msg)
+        case _ => S.error("error", "could not register user.")
       }
-
-      val user_id = S.param("user_id").getOrElse("no user id found in post request")
-      "#user_id * " #> {"User ID: "+user_id} & "#token * " #> {"Token: "+token}
+      NOOP_SELECTOR
     }
     else{
-      "#post_result * " #> "Post request not successful."
+      S.error("error", "no POST request found")
+      NOOP_SELECTOR
     }
   }
 
-  def createAPIUser(user_id: String, host: String, token: Token) = {
-    val user = APIUser.find(By(APIUser.providerId, user_id), By(APIUser.provider_, host)) match {
-      case Full(u) => u
+  private def checkParameter(param: String): Box[String] = {
+    S.param(param) match {
+      case Full(value) if(value.nonEmpty) => {
+        logger.info(s"$param parameter is set")
+        Full(value)
+      }
+      case Full(value) => {
+        val error = s"$param value is empty"
+        logger.error(error)
+        Failure(error)
+      }
       case _ => {
-        APIUser.create
-        .provider_(host)
-        .providerId(user_id)
-        .saveMe
+        val error = s"$param parameter is missing"
+        logger.error(error)
+        Failure(error)
       }
     }
 
+  }
+  private def getToken(token: String): Box[Token] = {
+    Token.find(By(Token.thirdPartyApplicationSecret, token)) match {
+      case Full(token) => {
+        if(token.isValid)
+          Full(token)
+        else
+          Failure("token expired")
+      }
+      case _ =>
+        Failure("token not found")
+    }
+  }
+
+  private def getAuthenticationURL(token: Token): Box[String] = {
+    token.consumerId.obj match {
+      case Full(consumer) =>
+        Full(consumer.userAuthenticationURL.get)
+      case _ =>
+        Failure("consumer not found.")
+    }
+  }
+
+  private def getHost(authenticationURL: String) : Box[String] ={
+    if(authenticationURL.nonEmpty){
+      tryo{
+        new URL(authenticationURL)
+      } match {
+        case Full(url) =>{
+          val host = url.getHost
+          Full(host)
+        }
+        case _ =>
+          Failure("non valid authentication URL. Could not create the User.")
+      }
+    }
+    else
+      Failure("authentication URL is empty. Could not create the User.")
+  }
+
+  private def setSessionVars(user: APIUser, token: Token): Unit = {
     CurrentUser.set(Full(user))
     RequestToken.set(Full(token))
-    S.redirectTo("../banking-credentials")
+  }
+
+  private def getOrCreateAPIUser(userId: String, host: String): APIUser = {
+    APIUser.find(By(APIUser.providerId, userId), By(APIUser.provider_, host)) match {
+      case Full(u) => {
+        logger.info("user exist already")
+        u
+      }
+      case _ => {
+        logger.info("creating user")
+        APIUser.create
+        .provider_(host)
+        .providerId(userId)
+        .saveMe
+      }
+    }
   }
 }
