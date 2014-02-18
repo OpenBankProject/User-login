@@ -29,7 +29,7 @@ Berlin 13359, Germany
  */
 package code.snippet
 
-import net.liftweb.common.{Full, Box, Empty, Failure, Logger}
+import net.liftweb.common.{Full, Box, Empty, Failure, Loggable}
 import net.liftweb.http.S
 import net.liftweb.util.{Helpers, CssSel}
 import scala.xml.NodeSeq
@@ -43,25 +43,24 @@ import code.model.dataAccess.APIUser
 import code.model.Token
 import code.model.{RequestToken, CurrentUser}
 
-class OAuthCallback extends Logger{
+class OAuthCallback extends Loggable{
   private val NOOP_SELECTOR = "#i_am_an_id_that_should_never_exist" #> ""
-
-  private def getURL(url: String): Box[URL] = {
-    tryo{new URL(url)}
-  }
 
   def redirectToBankingCredentials:CssSel = {
     if(S.post_?){
-      (for{
-        tokenParam <- S.param("token") ?~ "token parameter is missing"
-        userIdParam <- S.param("user_id") ?~ "user_id parameter is missing"
-        token <- getToken(tokenParam)
-        url <- getAuthenticationURL(token)
-        host <- getHost(url)
-      } yield{
-        val user = getOrCreateAPIUser(userIdParam, host)
-        setSessionVars(user, token)
-      }) match {
+      val result =
+        for{
+          tokenParam <- checkParameter("token")
+          userIdParam <- checkParameter("user_id")
+          token <- getToken(tokenParam)
+          url <- getAuthenticationURL(token)
+          host <- getHost(url)
+        } yield{
+          val user = getOrCreateAPIUser(userIdParam, host)
+          setSessionVars(user, token)
+        }
+
+      result match {
         case Full(a) => S.redirectTo("../banking-credentials")
         case Failure(msg, _, _) => S.error("error", msg)
         case _ => S.error("error", "could not register user.")
@@ -74,6 +73,25 @@ class OAuthCallback extends Logger{
     }
   }
 
+  private def checkParameter(param: String): Box[String] = {
+    S.param(param) match {
+      case Full(value) if(value.nonEmpty) => {
+        logger.info(s"$param parameter is set")
+        Full(value)
+      }
+      case Full(value) => {
+        val error = s"$param value is empty"
+        logger.error(error)
+        Failure(error)
+      }
+      case _ => {
+        val error = s"$param parameter is missing"
+        logger.error(error)
+        Failure(error)
+      }
+    }
+
+  }
   private def getToken(token: String): Box[Token] = {
     Token.find(By(Token.thirdPartyApplicationSecret, token)) match {
       case Full(token) => {
@@ -98,7 +116,9 @@ class OAuthCallback extends Logger{
 
   private def getHost(authenticationURL: String) : Box[String] ={
     if(authenticationURL.nonEmpty){
-      getURL(authenticationURL) match {
+      tryo{
+        new URL(authenticationURL)
+      } match {
         case Full(url) =>{
           val host = url.getHost
           Full(host)
@@ -116,14 +136,14 @@ class OAuthCallback extends Logger{
     RequestToken.set(Full(token))
   }
 
-  def getOrCreateAPIUser(userId: String, host: String): APIUser = {
+  private def getOrCreateAPIUser(userId: String, host: String): APIUser = {
     APIUser.find(By(APIUser.providerId, userId), By(APIUser.provider_, host)) match {
       case Full(u) => {
-        // logger.info("user exist already")
+        logger.info("user exist already")
         u
       }
       case _ => {
-        // logger.info("creating user")
+        logger.info("creating user")
         APIUser.create
         .provider_(host)
         .providerId(userId)
