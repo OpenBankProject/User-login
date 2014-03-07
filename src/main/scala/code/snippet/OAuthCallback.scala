@@ -51,12 +51,12 @@ class OAuthCallback extends Loggable{
       val result =
         for{
           tokenParam <- checkParameter("token")
-          userIdParam <- checkParameter("user_id")
+          userIdGiverByProvider <- checkParameter("user_id")
           token <- getToken(tokenParam)
           url <- getAuthenticationURL(token)
-          host <- getHost(url)
+          providerId <- getProviderId(url)
         } yield{
-          val user = getOrCreateAPIUser(userIdParam, host)
+          val user = getOrCreateAPIUser(userIdGiverByProvider, providerId)
           setSessionVars(user, token)
         }
 
@@ -114,14 +114,15 @@ class OAuthCallback extends Loggable{
     }
   }
 
-  private def getHost(authenticationURL: String) : Box[String] ={
+
+  private def getProviderId(authenticationURL: String) : Box[String] ={
     if(authenticationURL.nonEmpty){
       tryo{
         new URL(authenticationURL)
       } match {
         case Full(url) =>{
-          val host = url.getHost
-          Full(host)
+          val newURL = url.getProtocol() + "://" + url.getHost()
+          Full(newURL)
         }
         case _ =>
           Failure("non valid authentication URL. Could not create the User.")

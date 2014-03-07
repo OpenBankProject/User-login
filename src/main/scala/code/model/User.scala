@@ -37,7 +37,10 @@ import code.model.dataAccess.LocalStorage
 import net.liftweb.common.Box
 
 trait User {
-  def id_ : String
+  
+  def apiId : String
+  
+  def idGivenByProvider: String
   def provider : String
   def emailAddress : String
   def theFirstName : String
@@ -45,6 +48,6 @@ trait User {
 }
 
 object User {
-  def findById(id : String) : Box[User] =
-    LocalStorage.getUser(id)
+  def findByApiId(id : String) : Box[User] =
+    LocalStorage.getUserByApiId(id)
 }

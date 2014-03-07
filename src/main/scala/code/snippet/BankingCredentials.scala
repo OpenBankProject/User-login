@@ -119,7 +119,7 @@ class BankingCrendetials extends Loggable{
     val publicKey = Props.get("publicKeyPath").getOrElse("")
     val encryptedPin =
       PgpEncryption.encryptToString(accountPin.is, publicKey)
-    val accountOwnerId = u.id_
+    val accountOwnerId = u.idGivenByProvider
     val accountOwnerProvider = u.provider
     val bankName = GermanBanks.getAvaliableBanks().get(bank.get).getOrElse("")
     val message =
@@ -185,7 +185,7 @@ class BankingCrendetials extends Loggable{
   private def generateVerifier(token: Token, user: APIUser) :Box[String] = {
     if (token.verifier.isEmpty) {
       val randomVerifier = token.gernerateVerifier
-      token.userId(user.id_)
+      token.userForeignKey(user.id)
       if (token.save())
         Full(randomVerifier)
       else{

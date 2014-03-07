@@ -35,6 +35,7 @@ import net.liftweb.util.FieldError
 import net.liftweb.common.{Full,Failure,Box,Empty}
 import net.liftweb.util.Helpers
 import Helpers.now
+import code.model.dataAccess.APIUser
 
 object AppType extends Enumeration("web", "mobile"){
   type AppType = Value
@@ -59,7 +60,9 @@ class Consumer extends LongKeyedMapper[Consumer] with CreatedUpdated{
   private def validUrl(field: MappedString[Consumer])(s: String) = {
     import java.net.URL
     import Helpers.tryo
-    if(tryo{new URL(s)}.isEmpty)
+    if(s.isEmpty)
+      Nil
+    else if(tryo{new URL(s)}.isEmpty)
       List(FieldError(field, {field.displayName + " must be a valid URL"}))
     else
       Nil
@@ -120,13 +123,14 @@ class Nonce extends LongKeyedMapper[Nonce] {
 }
 object Nonce extends Nonce with LongKeyedMetaMapper[Nonce]{}
 
+
 class Token extends LongKeyedMapper[Token]{
   def getSingleton = Token
   def primaryKeyField = id
   object id extends MappedLongIndex(this)
   object tokenType extends MappedEnum(this, TokenType)
   object consumerId extends MappedLongForeignKey(this, Consumer)
-  object userId extends MappedString(this,255)
+  object userForeignKey extends MappedLongForeignKey(this, APIUser)
   object key extends MappedString(this,250)
   object secret extends MappedString(this,250)
   object callbackURL extends MappedString(this,250)
@@ -134,7 +138,7 @@ class Token extends LongKeyedMapper[Token]{
   object duration extends MappedLong(this)//expressed in milliseconds
   object expirationDate extends MappedDateTime(this)
   object insertDate extends MappedDateTime(this)
-  def user = User.findById(userId.get)
+  def user = userForeignKey.obj
   def isValid : Boolean = expirationDate.is after now
   def gernerateVerifier : String =
     if (verifier.isEmpty){

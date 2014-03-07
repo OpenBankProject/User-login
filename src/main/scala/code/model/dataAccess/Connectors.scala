@@ -43,14 +43,15 @@ object LocalStorage extends MongoDBLocalStorage
 
 trait LocalStorage extends Loggable {
 
-  def getUser(id : String) : Box[User]
+  def getUserByApiId(id : String) : Box[User]
 }
 
 class MongoDBLocalStorage extends LocalStorage {
 
-  def getUser(id : String) : Box[User] = {
+  def getUserByApiId(id : String) : Box[User] = {
     for{
-      user <- APIUser.find(By(APIUser.providerId,id)) ?~ { s"user $id not found"}
+      idAsLong <- tryo{id.toLong} ?~ { s"user $id not found"}
+      user <- APIUser.find(By(APIUser.id, idAsLong)) ?~ { s"user $id not found"}
     } yield user
   }
 
