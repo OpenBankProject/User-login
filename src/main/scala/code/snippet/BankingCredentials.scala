@@ -48,6 +48,7 @@ import com.tesobe.model.AddBankAccountCredentials
 
 
 class BankingCrendetials extends Loggable{
+  private lazy val NOOP_SELECTOR = "#i_am_an_id_that_should_never_exist" #> ""
 
   class FormField[T](
     defaultValue: => T,
@@ -117,6 +118,7 @@ class BankingCrendetials extends Loggable{
   private def processData(t: Token, u: APIUser): String = {
     val id = randomString(8)
     val publicKey = Props.get("publicKeyPath").getOrElse("")
+    //TODO: wrap the encryption with a tryo to Handel exception
     val encryptedPin =
       PgpEncryption.encryptToString(accountPin.is, publicKey)
     val accountOwnerId = u.idGivenByProvider
@@ -198,6 +200,8 @@ class BankingCrendetials extends Loggable{
   }
 
   private def renderForm(token: Token, user: APIUser) = {
+    lazy val textMessage = <div>Please come back to the application where you come from and enter the following code: </div>
+    def verifierMessage(verifier: String) = <div id="verifier">{verifier}</div>
 
     /**
     *
@@ -211,11 +215,11 @@ class BankingCrendetials extends Loggable{
 
             generateVerifier(token, user) match {
               case Full(v) => {
-                if (token.callbackURL.is == "oob")
+                if (token.callbackURL.is == "oob"){
                   JsHideId("error") &
-                  SetHtml("verifier",Unparsed(v)) &
-                  JsShowId("verifierBloc") &
+                  SetHtml("verifierBloc",textMessage ++ verifierMessage(v)) &
                   Helper.JsHideByClass("hide-during-ajax")
+                }
                 else {
                   //redirect the user to the application with the verifier
                   val redirectionUrl =
@@ -260,22 +264,56 @@ class BankingCrendetials extends Loggable{
         (s"$bankname ($bankId)", bankId)
       }
     }
-    val banks: Seq[String] =  Seq(defaultBank) ++ availableBanks.keySet.toSeq.sortWith(_.toLowerCase < _.toLowerCase)
-    "form [action]" #> {S.uri}&
-    "#countrySelect"  #>
-      SHtml.selectElem(countries,Full(country.is))(
-        (v : String) => country.set(v)
-      ) &
-    "#bankSelect" #>
-      SHtml.selectElem(banks,Full(banks.head))(
-        (bankname : String) => availableBanks.get(bankname) map {
-          bankId => bank.set(bankId)
+
+    //skip the form if the correspondent query parameter is set
+
+    S.param("skip-banking-form") match {
+      case Full("true") => {
+        //generate verifier and redirect/show it
+        generateVerifier(token, user) match {
+          case Full(v) => {
+            if (token.callbackURL.is == "oob")
+              "#error" #> "" &
+              "#verifierBloc" #> {textMessage ++ verifierMessage(v)} &
+              ".hide-during-ajax" #> ""
+            else {
+              //redirect the user to the application with the verifier
+              val redirectionUrl =
+                Helpers.appendParams(
+                  token.callbackURL,
+                  Seq(("oauth_token", token.key),("oauth_verifier", v))
+                )
+              S.redirectTo(redirectionUrl)
+              NOOP_SELECTOR
+            }
           }
-      ) &
-    "#accountNumber" #> SHtml.textElem(accountNumber,("placeholder","123456789")) &
-    "#accountPin" #> SHtml.passwordElem(accountPin,("placeholder","***********")) &
-    "#processSubmit" #> SHtml.hidden(processInputs) &
-    "#saveBtn [value]" #> S.??("save")
+          case _ => {
+            "#error" #> S.??("error_try_later") &
+            ".hide-during-ajax" #> ""
+          }
+        }
+      }
+      case _ => {
+        val banks: Seq[String] =  Seq(defaultBank) ++ availableBanks.keySet.toSeq.sortWith(_.toLowerCase < _.toLowerCase)
+        "form [action]" #> {S.uri}&
+        "#countrySelect"  #>
+          SHtml.selectElem(countries,Full(country.is))(
+            (v : String) => country.set(v)
+          ) &
+        "#bankSelect" #>
+          SHtml.selectElem(banks,Full(banks.head))(
+            (bankname : String) => availableBanks.get(bankname) map {
+              bankId => bank.set(bankId)
+              }
+          ) &
+        "#accountNumber" #> SHtml.textElem(accountNumber,("placeholder","123456789")) &
+        "#accountPin" #> SHtml.passwordElem(accountPin,("placeholder","***********")) &
+        "#processSubmit" #> SHtml.hidden(processInputs) &
+        "#saveBtn [value]" #> S.??("save") &
+        "#skipButton" #> AjaxButton(S.??("skip"), ()=> RedirectTo())
+
+      }
+    }
   }
 
   def render = {
