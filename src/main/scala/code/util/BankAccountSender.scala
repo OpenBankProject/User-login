@@ -38,7 +38,7 @@ import net.liftweb.common.Loggable
 object BankAccountSender extends Loggable{
   val factory = new ConnectionFactory {
     import ConnectionFactory._
-    setHost("localhost")
+    setHost(Props.get("connection.host", "localhost"))
     setPort(DEFAULT_AMQP_PORT)
     setUsername(Props.get("connection.user", DEFAULT_USER))
     setPassword(Props.get("connection.password", DEFAULT_PASS))
