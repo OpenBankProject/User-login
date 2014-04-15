@@ -61,7 +61,10 @@ class OAuthCallback extends Loggable{
         }
 
       result match {
-        case Full(a) => S.redirectTo("../banking-credentials")
+        case Full(a) => {
+          val queryString = S.queryString.getOrElse("")
+          S.redirectTo(s"../banking-credentials?$queryString")
+        }
         case Failure(msg, _, _) => S.error("error", msg)
         case _ => S.error("error", "could not register user.")
       }
