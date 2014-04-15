@@ -209,7 +209,8 @@ class BankingCrendetials extends Loggable{
     def processInputs(): JsCmd = {
       val errors = validate(fields)
       if(errors.isEmpty){
-        updatePage(processData(token,user)) match {
+        val messageId = processData(token,user)
+        updatePage(messageId) match {
           case Full(_) => {
             //redirect or show the verifier
 
@@ -266,8 +267,8 @@ class BankingCrendetials extends Loggable{
     }
 
     //skip the form if the correspondent query parameter is set
-
-    S.param("skip-banking-form") match {
+    val skipQuerryParam = "skip-banking-form"
+    S.param(skipQuerryParam) match {
       case Full("true") => {
         //generate verifier and redirect/show it
         generateVerifier(token, user) match {
@@ -283,6 +284,7 @@ class BankingCrendetials extends Loggable{
                   token.callbackURL,
                   Seq(("oauth_token", token.key),("oauth_verifier", v))
                 )
+              logger.info(s"redirecting to: $redirectionUrl")
               S.redirectTo(redirectionUrl)
               NOOP_SELECTOR
             }
@@ -295,6 +297,7 @@ class BankingCrendetials extends Loggable{
       }
       case _ => {
         val banks: Seq[String] =  Seq(defaultBank) ++ availableBanks.keySet.toSeq.sortWith(_.toLowerCase < _.toLowerCase)
+        val currentPageWithSkipParam = appendQueryParameters(S.uri, List((skipQuerryParam,"true")))
         "form [action]" #> {S.uri}&
         "#countrySelect"  #>
           SHtml.selectElem(countries,Full(country.is))(
@@ -310,7 +313,9 @@ class BankingCrendetials extends Loggable{
         "#accountPin" #> SHtml.passwordElem(accountPin,("placeholder","***********")) &
         "#processSubmit" #> SHtml.hidden(processInputs) &
         "#saveBtn [value]" #> S.??("save") &
-        "#skipButton" #> AjaxButton(S.??("skip"), ()=> RedirectTo())
+        //this button is redirecting to the same page with the "skip" query parameter.
+        //TODO: improve this
+        "#skipButton" #> SHtml.ajaxButton(S.??("skip"), ()=> RedirectTo(currentPageWithSkipParam))
 
       }
     }
