@@ -177,7 +177,7 @@ class BankingCrendetials extends Loggable{
           }
         }
       case _ => {
-        logger.info("data storage time out.")
+        logger.warn("data storage time out.")
         Failure("not saved")
       }
     }

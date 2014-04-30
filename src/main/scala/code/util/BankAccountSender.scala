@@ -30,9 +30,9 @@ Berlin 13359, Germany
 package code.util
 
 import com.rabbitmq.client.{ConnectionFactory,Channel}
-import net.liftmodules.amqp.{AMQPSender,StringAMQPSender,AMQPMessage}
+import net.liftmodules.amqp.{AMQPSender,AMQPMessage}
 import com.tesobe.model.BankAccount
-import net.liftweb.util._
+import net.liftweb.util.Props
 import net.liftweb.common.Loggable
 
 object BankAccountSender extends Loggable{
