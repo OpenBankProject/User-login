@@ -41,7 +41,7 @@ import scala.xml.{NodeSeq, Unparsed}
 import scala.util.{Either, Right, Left}
 
 import code.model.dataAccess.APIUser
-import code.util.{BankAccountSender, Helper}
+import code.util.{MessageSender, Helper}
 import code.model.{Token, RequestToken, CurrentUser, GermanBanks}
 import code.pgp.PgpEncryption
 import com.tesobe.model.AddBankAccountCredentials
@@ -134,7 +134,7 @@ class BankingCrendetials extends Loggable{
         accountOwnerId,
         accountOwnerProvider
       )
-    BankAccountSender.sendMessage(message)
+    MessageSender.sendBankingCredentials(message)
     id
   }
 

@@ -35,7 +35,8 @@ import com.tesobe.model.BankAccount
 import net.liftweb.util.Props
 import net.liftweb.common.Loggable
 
-object BankAccountSender extends Loggable{
+object MessageSender extends Loggable{
+  import com.tesobe.status.model.SupportedBanksReply
   val factory = new ConnectionFactory {
     import ConnectionFactory._
     setHost(Props.get("connection.host", "localhost"))
@@ -45,17 +46,22 @@ object BankAccountSender extends Loggable{
     setVirtualHost(DEFAULT_VHOST)
   }
 
-  //BankAccountAMQPSender(ConnectionFactory, EXCHANGE, QUEUE_ROUTING_KEY)
-  val amqp = new BankAccountAMQPSender(factory, "directExchange", "management")
+  val amqp = new MessageSender[BankAccount](factory, "directExchange", "management")
+  val amqp2 = new MessageSender[SupportedBanksReply](factory, "banksListResponse", "banksList")
 
-  def sendMessage(message: BankAccount) = {
+  def sendBankingCredentials(message: BankAccount) = {
     logger.info(s"sending to the data storage: $message")
     amqp ! AMQPMessage(message)
   }
+
+  def sendBanksList(message: SupportedBanksReply) = {
+    logger.info(s"sending to the status application: $message")
+    amqp2 ! AMQPMessage(message)
+  }
 }
 
-class BankAccountAMQPSender(cf: ConnectionFactory, exchange: String, routingKey: String)
- extends AMQPSender[BankAccount](cf, exchange, routingKey) {
+class MessageSender[T](cf: ConnectionFactory, exchange: String, routingKey: String)
+ extends AMQPSender[T](cf, exchange, routingKey) {
   override def configure(channel: Channel) = {
     val conn = cf.newConnection()
     val channel = conn.createChannel()
