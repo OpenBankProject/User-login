@@ -27,30 +27,38 @@ Berlin 13359, Germany
   Nina Gänsdorfer: nina AT tesobe DOT com
 
  */
-package com.tesobe.model
+package com.tesobe.model{
 
-import net.liftmodules.amqp.AMQPSender
-import com.rabbitmq.client.{ConnectionFactory,Channel}
+  trait BankAccount{}
 
-trait BankAccount{}
+  case class AddBankAccountCredentials(
+    id: String,
+    accountNumber : String,
+    bankNationalIdentifier : String,
+    bankName: String,
+    pinCode : String,
+    accountOwnerId: String,
+    accountOwnerProvider: String
+  ) extends BankAccount
 
-case class AddBankAccountCredentials(
-  id: String,
-  accountNumber : String,
-  bankNationalIdentifier : String,
-  bankName: String,
-  pinCode : String,
-  accountOwnerId: String,
-  accountOwnerProvider: String
-) extends BankAccount
+  trait Response{
+    val id: String
+    val message: String
+  }
 
-case class UpdateBankAccountCredentials(id: String, accountNumber : String, bankNationalIdentifier : String, pinCode : String) extends BankAccount
-case class DeleteBankAccountCredentials(id: String, accountNumber : String, bankNationalIdentifier : String) extends BankAccount
+  case class SuccessResponse(id: String, message: String) extends Response
+  case class ErrorResponse(id: String, message: String) extends Response
 
-trait Response{
-  val id: String
-  val message: String
 }
 
-case class SuccessResponse(id: String, message: String) extends Response
-case class ErrorResponse(id: String, message: String) extends Response
+package com.tesobe.status.model{
+  case class GetSupportedBanks
+  case class SupportedBanksReply(
+    banks: Set[BankInfo]
+  )
+  case class BankInfo(
+    country: String,
+    nationalIdentifier: String,
+    name: String
+  )
+}
