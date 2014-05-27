@@ -36,20 +36,17 @@ import http._
 import sitemap._
 import Loc._
 import mapper._
-import code.model.dataAccess._
-import code.model.{Consumer, Token}
-import net.liftweb.util.Helpers._
-import net.liftweb.json.JsonDSL._
-import net.liftweb.util.Schedule
-import net.liftweb.http.js.jquery.JqJsCmds
-import net.liftweb.util.Helpers
+import Helpers._
+import http.js.JsCmds
+import json.JsonDSL._
 import javax.mail.{ Authenticator, PasswordAuthentication }
 import java.io.FileInputStream
 import java.io.File
-import code.util.Helper
-import net.liftweb.http.js.JsCmds
+
+import code.model.{Consumer, Token, dataAccess}
+import dataAccess.OBPUser
+import code.util.{Helper, MyExceptionLogger, BanksListListener}
 import code.api.OAuthHandshake
-import code.util.BanksListListener
 
 /**
  * A class that's instantiated early and run.  It allows the application
@@ -205,5 +202,9 @@ class Boot extends Loggable{
     LiftRules.ajaxPostTimeout = seconds(20) toInt
 
     BanksListListener.startListen
+
+    LiftRules.exceptionHandler.prepend{
+      case MyExceptionLogger(_, _, t) => throw t // this will never happen
+    }
   }
 }
