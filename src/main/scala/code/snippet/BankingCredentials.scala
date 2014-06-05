@@ -312,6 +312,7 @@ class BankingCrendetials extends Loggable{
         "#accountNumber" #> SHtml.textElem(accountNumber,("placeholder","123456789")) &
         "#accountPin" #> SHtml.passwordElem(accountPin,("placeholder","***********")) &
         "#processSubmit" #> SHtml.hidden(processInputs) &
+        "#accountInfo [title]" #> S.??("accountInfo") &
         "#saveBtn [value]" #> S.??("save") &
         //this button is redirecting to the same page with the "skip" query parameter.
         //TODO: improve this
