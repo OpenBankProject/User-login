@@ -1,5 +1,23 @@
 @import url('reset.css');
 
+@media all and (max-width: 350px) {
+  #accountForm select.field {
+    width: 155px;
+  }
+  #accountForm .field{
+    width: 150px;
+  }
+}
+
+@media all and (min-width: 351px) {
+  #accountForm select.field {
+    width: 205px;
+  }
+  #accountForm .field{
+    width: 200px;
+  }
+}
+
 body {
   font-family: "HelveticaNeue-Light", "Helvetica Neue Light", "Helvetica Neue", Helvetica, Arial, "Lucida Grande", sans-serif;
   font-weight: 300;
@@ -20,8 +38,9 @@ input.submit {
 
 #wrapper {
   /*width: 940px;*/
-  width: 1050px;
+  max-width: 1050px;
   margin: 0 auto;
+  padding: 0 10px;
 }
 
 #header {
@@ -148,4 +167,9 @@ span#registrationDetails
 }
 .hideByDefault{
   display: none;
+}
+
+#accountForm #saveBtn, #skipButton{
+  min-width: 100px;
+  padding: 0 10px;
 }
