@@ -34,9 +34,13 @@ import net.liftweb.util.Helpers.tryo
 import net.liftweb.util.Props
 import scala.io.Source
 
+case class BankDetails(
+  name: String,
+  userIdRequired: Boolean
+)
 object GermanBanks extends Loggable{
-  // key: bank name, value BLZ (bank identifier)
-  private var availableBanks: Map[String,String] = Map()
+  // key: BLZ (bank identifier), value: bank details
+  private var availableBanks: Map[String,BankDetails] = Map()
 
   def getAvaliableBanks()= {
     if(availableBanks.isEmpty){
@@ -60,7 +64,10 @@ object GermanBanks extends Loggable{
                 s" - ${secondSplit(1)}"
               else
                 ""
-            availableBanks += ((firstSplit(0), secondSplit(0) + city ))
+            val bankId = firstSplit(0)
+            val bankName = secondSplit(0) + city
+            val userIdRequired = bankId =="43060967"
+            availableBanks += ((bankId, BankDetails(bankName, userIdRequired)))
           }
         }
       }

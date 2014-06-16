@@ -37,7 +37,7 @@ import code.model.dataAccess.APIUser
 * The purpose is to share the request token between the pages without reloading
 * each time the token form the database.
 *
-* Note: SessionVar is used rather that RequestVar because RequestVar is valid
+* Note: SessionVar is used rather than RequestVar because RequestVar is valid
 * only for the same HTTP request (same page) while rendering different pages
 * is responding to different HTTP requests.
 */

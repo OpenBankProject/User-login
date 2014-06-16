@@ -78,9 +78,11 @@ object BanksListListener extends Loggable{
           SupportedBanksReply(
             GermanBanks
             .getAvaliableBanks
-            .map(b => {
-              BankInfo("DEU", b._1, b._2)
-            })
+            .map{
+              case (bankId, bankDetails) => {
+                BankInfo("DEU", bankId, bankDetails.name)
+              }
+            }
             .toSet
           )
         MessageSender.sendBanksList(message)
