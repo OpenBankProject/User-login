@@ -51,12 +51,12 @@ class BankingCrendetials extends Loggable{
   private lazy val NOOP_SELECTOR = "#i_am_an_id_that_should_never_exist" #> ""
 
   class FormField[T](
-    defaultValue: => T,
+    val defaultValue: T,
     //the message in case the field value is not valid
-    errorMessage: => String,
+    val errorMessage: String,
     //the id of the error notice node (span/div) in the template where
     //to show the error message
-    errorNodeId: => String
+    val errorNodeId: String
   ) extends RequestVar[T](defaultValue){
     /**
     * Left (the error case) contains the pair (error node Id,  error message)
@@ -77,7 +77,6 @@ class BankingCrendetials extends Loggable{
      S.??("no_country_selected"),
     "countryError"
   )
-
   private object bank extends FormField[String](
     defaultBank,
     S.??("no_bank_selected"),
@@ -88,7 +87,27 @@ class BankingCrendetials extends Loggable{
     S.??("account_number_empty"),
     "accountNumberError"
   )
+  private object userId extends FormField[String](
+    "",
+    S.??("user_id_empty"),
+    "userIdError"
+  ){
+    override def validate : Either[(String, String),Unit] = {
+      val userIdRequired: Boolean =
+        GermanBanks
+        .getAvaliableBanks()
+        .get(bank.get)
+        .map{_.userIdRequired}
+        .getOrElse(false) // if we don't find a bank
+                          // given an id it means we didn't select one
+                          // so there is no error message to show yet
 
+      if(userIdRequired && (this.is == this.defaultValue))
+        Left((this.errorNodeId, this.errorMessage))
+      else
+        Right()
+    }
+  }
   private object accountPin extends FormField[String](
     "",
     S.??("account_pin_empty"),
@@ -101,7 +120,8 @@ class BankingCrendetials extends Loggable{
     country,
     bank,
     accountNumber,
-    accountPin
+    accountPin,
+    userId
   )
 
   /**
@@ -123,11 +143,18 @@ class BankingCrendetials extends Loggable{
       PgpEncryption.encryptToString(accountPin.is, publicKey)
     val accountOwnerId = u.idGivenByProvider
     val accountOwnerProvider = u.provider
-    val bankName = GermanBanks.getAvaliableBanks().get(bank.get).getOrElse("")
+    val bankName = GermanBanks
+      .getAvaliableBanks()
+      .get(bank.get)
+      .map{_.name}
+      .getOrElse("")
+
+    val optionalUserId = if(userId.get.isEmpty) None else Some(userId.get)
     val message =
       AddBankAccountCredentials(
         id,
         accountNumber,
+        optionalUserId,
         bank.get,
         bankName,
         encryptedPin,
@@ -172,13 +199,13 @@ class BankingCrendetials extends Loggable{
             Full({})
           }
           case _: ErrorResponse =>{
-            logger.info(s"could not save account ${r.message}")
+            logger.info(s"could not save account: ${r.message}")
             Failure(r.message)
           }
         }
       case _ => {
         logger.warn("data storage time out.")
-        Failure("not saved")
+        Failure("Failed to save the bank account credentials. Please try later.")
       }
     }
 
@@ -213,7 +240,6 @@ class BankingCrendetials extends Loggable{
         updatePage(messageId) match {
           case Full(_) => {
             //redirect or show the verifier
-
             generateVerifier(token, user) match {
               case Full(v) => {
                 if (token.callbackURL.is == "oob"){
@@ -259,12 +285,12 @@ class BankingCrendetials extends Loggable{
       }
     }
 
-    val countries  = defaultCountry :: S.??("germany") :: Nil
-    val availableBanks = GermanBanks.getAvaliableBanks() map {
-      case (bankId, bankname) => {
-        (s"$bankname ($bankId)", bankId)
+    val countries = defaultCountry :: S.??("germany") :: Nil
+    val availableBanks: Map[String, (String, Boolean)] = GermanBanks.getAvaliableBanks() map {
+        case (bankId, bankDetails) => {
+          (s"${bankDetails.name} ($bankId)", (bankId,bankDetails.userIdRequired))
+        }
       }
-    }
 
     //skip the form if the correspondent query parameter is set
     val skipQuerryParam = "skip-banking-form"
@@ -296,22 +322,45 @@ class BankingCrendetials extends Loggable{
         }
       }
       case _ => {
+
         val banks: Seq[String] =  Seq(defaultBank) ++ availableBanks.keySet.toSeq.sortWith(_.toLowerCase < _.toLowerCase)
         val currentPageWithSkipParam = appendQueryParameters(S.uri, List((skipQuerryParam,"true")))
+        def showOrHideUserIdField(bankName: String): JsCmd = {
+          val jsCmd = availableBanks.get(bankName) match {
+              case Some((bankId, userIdRequired)) =>{
+                if(userIdRequired){
+                  JsShowId("userIdRow")
+                }
+                else{
+                  JsHideId("userIdRow")
+                }
+              }
+              case _ => Noop
+            }
+          jsCmd &
+          Helper.JsShowByClass("hide-during-ajax")
+        }
+
         "form [action]" #> {S.uri}&
         "#countrySelect"  #>
           SHtml.selectElem(countries,Full(country.is))(
             (v : String) => country.set(v)
           ) &
-        "#bankSelect" #>
-          SHtml.selectElem(banks,Full(banks.head))(
+        "#bankSelect" #> SHtml.selectElem(banks,Full(banks.head))(
             (bankname : String) => availableBanks.get(bankname) map {
-              bankId => bank.set(bankId)
+                bankIdAndUserIdRequired => bank.set(bankIdAndUserIdRequired._1)
               }
-          ) &
+          ) andThen
+        "#bankSelect [onchange]" #>{
+            import net.liftweb.http.js.JE.JsRaw
+
+            SHtml.ajaxCall(JsRaw("getBankName()"), (bankname) => showOrHideUserIdField(bankname))
+        }&
         "#accountNumber" #> SHtml.textElem(accountNumber,("placeholder","123456789")) &
+        "#userId" #> SHtml.textElem(userId,("placeholder","user-1234")) &
         "#accountPin" #> SHtml.passwordElem(accountPin,("placeholder","***********")) &
         "#processSubmit" #> SHtml.hidden(processInputs) &
+        "#accountInfo [title]" #> S.??("accountInfo") &
         "#saveBtn [value]" #> S.??("save") &
         //this button is redirecting to the same page with the "skip" query parameter.
         //TODO: improve this

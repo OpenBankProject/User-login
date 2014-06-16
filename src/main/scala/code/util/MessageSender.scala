@@ -31,7 +31,7 @@ package code.util
 
 import com.rabbitmq.client.{ConnectionFactory,Channel}
 import net.liftmodules.amqp.{AMQPSender,AMQPMessage}
-import com.tesobe.model.BankAccount
+import com.tesobe.model.AddBankAccountCredentials
 import net.liftweb.util.Props
 import net.liftweb.common.Loggable
 
@@ -46,10 +46,10 @@ object MessageSender extends Loggable{
     setVirtualHost(DEFAULT_VHOST)
   }
 
-  val amqp = new MessageSender[BankAccount](factory, "directExchange", "management")
+  val amqp = new MessageSender[AddBankAccountCredentials](factory, "directExchange", "management")
   val amqp2 = new MessageSender[SupportedBanksReply](factory, "banksListResponse", "banksList")
 
-  def sendBankingCredentials(message: BankAccount) = {
+  def sendBankingCredentials(message: AddBankAccountCredentials) = {
     logger.info(s"sending to the data storage: $message")
     amqp ! AMQPMessage(message)
   }

@@ -29,17 +29,16 @@ Berlin 13359, Germany
  */
 package com.tesobe.model{
 
-  trait BankAccount{}
-
   case class AddBankAccountCredentials(
     id: String,
-    accountNumber : String,
-    bankNationalIdentifier : String,
+    accountNumber: String,
+    userId: Option[String],
+    bankNationalIdentifier: String,
     bankName: String,
-    pinCode : String,
+    pinCode: String,
     accountOwnerId: String,
     accountOwnerProvider: String
-  ) extends BankAccount
+  )
 
   trait Response{
     val id: String
