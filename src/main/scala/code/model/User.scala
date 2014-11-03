@@ -37,14 +37,14 @@ import code.model.dataAccess.LocalStorage
 import net.liftweb.common.Box
 
 trait User {
-  
+
   def apiId : String
-  
+
   def idGivenByProvider: String
   def provider : String
   def emailAddress : String
-  def theFirstName : String
-  def theLastName : String
+  //TODO: rename to displayName?
+  def name : String
 }
 
 object User {

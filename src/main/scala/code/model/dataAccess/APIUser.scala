@@ -41,10 +41,7 @@ class APIUser extends LongKeyedMapper[APIUser] with User with ManyToMany with On
   object email extends MappedEmail(this, 48){
     override def required_? = false
   }
-  object firstName extends MappedString(this, 100){
-    override def required_? = false
-  }
-  object lastName extends MappedString(this, 100){
+  object name_ extends MappedString(this, 100){
     override def required_? = false
   }
   object provider_ extends MappedString(this, 100){
@@ -63,9 +60,8 @@ class APIUser extends LongKeyedMapper[APIUser] with User with ManyToMany with On
   
   def idGivenByProvider = providerId.get 
   def apiId = id.get.toString
-  
-  def theFirstName : String = firstName.get
-  def theLastName : String = lastName.get
+
+  def name : String = name_.get
   def provider = provider_.get
 
 }
