@@ -45,7 +45,7 @@ class APIUser extends LongKeyedMapper[APIUser] with User with ManyToMany with On
     override def required_? = false
   }
   object provider_ extends MappedString(this, 100){
-    override def defaultValue = Props.get("hostname","")
+    override def defaultValue = Props.get("apiuser.provider", "")
   }
 
   /**
