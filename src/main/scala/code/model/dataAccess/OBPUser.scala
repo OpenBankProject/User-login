@@ -67,7 +67,7 @@ class OBPUser extends MegaProtoUser[OBPUser] with Logger{
       val apiUser = APIUser.create
         .name_(displayName)
         .email(email)
-        .provider_(Props.get("hostname",""))
+        .provider_(Props.get("apiuser.provider",""))
         .providerId(email)
         .saveMe
       user(apiUser)
