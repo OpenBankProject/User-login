@@ -11,9 +11,9 @@
 	<name>Open Bank Project API</name>
 	<inceptionYear>2011</inceptionYear>
 	<properties>
-		<scala.version>2.10</scala.version>
-		<scala.compiler>2.10.0</scala.compiler>
-		<lift.version>2.6-SNAPSHOT</lift.version>
+		<scala.version>2.11</scala.version>
+		<scala.compiler>2.11.8</scala.compiler>
+		<lift.version>2.6.3</lift.version>
 		<!-- Common plugin settings -->
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<project.reporting.outputEncoding>${project.build.sourceEncoding}</project.reporting.outputEncoding>
@@ -27,7 +27,7 @@
 		<repository>
 			<id>scala-tools.releases</id>
 			<name>Scala-Tools Dependencies Repository for Releases</name>
-			<url>https://oss.sonatype.org/content/groups/scala-tools/</url>
+			<url>https://oss.sonatype.org/content/repositories/releases/</url>
 		</repository>
     <repository>
       <id>java.net.maven2</id>
@@ -75,20 +75,22 @@
 		<dependency>
 			<groupId>postgresql</groupId>
 			<artifactId>postgresql</artifactId>
-			<version>8.4-701.jdbc4</version>
+			<version>9.1-901.jdbc4</version>
 		</dependency>
 		<dependency>
 			<groupId>org.scalatest</groupId>
-			<artifactId>scalatest_${scala.compiler}</artifactId>
-			<version>2.0.M5</version>
+			<artifactId>scalatest_2.11</artifactId>
+			<version>2.2.6</version>
 			<scope>test</scope>
 		</dependency>
+		<!--
 		<dependency>
 			<groupId>org.scala-tools.testing</groupId>
 			<artifactId>specs_${scala.version}</artifactId>
 			<version>1.6.9</version>
 			<scope>test</scope>
 		</dependency>
+-->
 		<dependency>
 			<groupId>org.mortbay.jetty</groupId>
 			<artifactId>jetty</artifactId>
@@ -110,7 +112,7 @@
 		</dependency>
   	<dependency>
       <groupId>net.liftmodules</groupId>
-      <artifactId>amqp_2.6_${scala.version}</artifactId>
+      <artifactId>amqp_2.6_2.9.2</artifactId>
       <version>1.3</version>
     </dependency>
     <dependency>
@@ -141,8 +143,8 @@
 		      	<plugin>
 			        <!-- enable the scalatest plugin -->
 			  		<groupId>org.scalatest</groupId>
-			  		<artifactId>maven-scalatest-plugin</artifactId>
-			  		<version>1.0-SNAPSHOT</version>
+			  		<artifactId>scalatest-maven-plugin</artifactId>
+			  		<version>1.0</version>
 			  		<configuration>
 			    		<reportsDirectory>${project.build.directory}/surefire-reports</reportsDirectory>
 			    		<junitxml>.</junitxml>
